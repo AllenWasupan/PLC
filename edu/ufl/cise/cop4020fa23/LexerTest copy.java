@@ -557,4 +557,452 @@ class LexerTest {
      	checkIdent("false",lexer.next());
      	checkIdent("true",lexer.next());     	
     }
+	@Test
+void test21() throws Exception {
+   String input = """
+         "
+         a
+         a
+         "
+         """;
+   ILexer lexer = ComponentFactory.makeLexer(input);
+   LexicalException e = assertThrows(LexicalException.class, () -> {
+      lexer.next();
+   });
+   show("Error message from test 21: " + e.getMessage());
+}
+
+void test22() throws Exception {
+   String input = """
+         "this"
+          "test"
+           "case"
+            "should*($)%*)"
+         """;
+   ILexer lexer = ComponentFactory.makeLexer(input);
+   //quotes escaped because quotation marks must be stored
+   checkToken(STRING_LIT,"\"this\"", 1, 1, lexer.next());
+   checkToken(STRING_LIT,"\"test\"", 2, 2, lexer.next());
+   checkToken(STRING_LIT,"\"case\"", 3, 3, lexer.next());
+   checkToken(STRING_LIT,"\"should*($)%*)\"", 4, 4, lexer.next());
+   checkToken(EOF, lexer.next());
+
+
+}
+
+//Note: These tests are not required
+/*tests whether program will throw an exception upon encountering a del character alone, in a comment, and
+in a string literal*/
+@Test
+void test23() throws Exception {
+   String input = """
+         ␡
+         """;
+   ILexer lexer = ComponentFactory.makeLexer(input);
+   LexicalException e = assertThrows(LexicalException.class, ()-> {
+      lexer.next();
+   });
+}
+@Test
+void test24() throws Exception {
+   String input = """
+         "␡"
+         """;
+   ILexer lexer = ComponentFactory.makeLexer(input);
+   LexicalException e = assertThrows(LexicalException.class, ()-> {
+      lexer.next();
+   });
+}
+@Test
+void test25() throws Exception {
+   String input = """
+         ##␡
+         """;
+   ILexer lexer = ComponentFactory.makeLexer(input);
+   LexicalException e = assertThrows(LexicalException.class, ()-> {
+      lexer.next();
+   });
+}
+
+
+@Test
+void test26() throws Exception {
+   String input = """
+          \s\"strange\"
+         
+               \"positioning\"
+                
+                   blue
+                   """;
+   ILexer lexer = ComponentFactory.makeLexer(input);
+   checkToken(STRING_LIT, "\"strange\"", 1, 2, lexer.next());
+   checkToken(STRING_LIT, "\"positioning\"", 3, 6, lexer.next());
+   checkToken(RES_blue, "blue", 5, 8, lexer.next());
+   checkToken(EOF, lexer.next());
+}
+
+@Test
+	void test27() throws Exception {
+		String input = """
+    			FALSETRUE
+    			Truefalse TRUE
+    			""";
+		ILexer lexer = ComponentFactory.makeLexer(input);
+		checkIdent("FALSETRUE",lexer.next());
+		checkIdent("Truefalse",lexer.next());
+		checkToken(BOOLEAN_LIT, "TRUE", lexer.next());
+	}
+
+
+@Test
+void test28() throws Exception {
+   String input = """
+         "RED"Redred
+         REDred red
+         """;
+   ILexer lexer = ComponentFactory.makeLexer(input);
+   checkString("RED", lexer.next()); // checkString instead of checkToken as given tests (ex. test 12) show
+   checkIdent("Redred",lexer.next()); // previous version had REDred check twice, although that does not match the input
+   checkIdent("REDred",lexer.next());
+   checkToken(RES_red, "red", lexer.next()); // red is not a CONST, although RED is
+}
+
+
+
+
+	@Test
+	void test29() throws Exception {
+		String input = """
+    			"asdjhfb"12389123 123/
+    			12[]*&&%AB1290080_
+    			""";
+		ILexer lexer = ComponentFactory.makeLexer(input);
+		checkString("asdjhfb", lexer.next());
+		checkNumLit("12389123", lexer.next());
+		checkNumLit("123", lexer.next());
+		checkToken(DIV, lexer.next());
+		checkNumLit("12", lexer.next());
+		checkToken(BOX, lexer.next());
+		checkToken(TIMES, lexer.next());
+		checkToken(AND, lexer.next());
+		checkToken(MOD, lexer.next());
+		checkIdent("AB1290080_",lexer.next());
+	}
+
+
+@Test
+void unitTestEOF() throws LexicalException {
+   String input = """
+         
+      """;
+   ILexer lexer = ComponentFactory.makeLexer(input);
+   checkEOF(lexer.next());
+}
+
+
+@Test
+void unitTestComma() throws LexicalException {
+   String input = ",";
+   ILexer lexer = ComponentFactory.makeLexer(input);
+   checkToken(COMMA, ",", lexer.next());
+   checkEOF(lexer.next());
+}
+
+
+@Test
+void unitTestSemi() throws LexicalException {
+   String input = ";";
+   ILexer lexer = ComponentFactory.makeLexer(input);
+   checkToken(SEMI, ";", lexer.next());
+   checkEOF(lexer.next());
+}
+
+
+@Test
+void unitTestQuestion() throws LexicalException {
+   String input = "?";
+   ILexer lexer = ComponentFactory.makeLexer(input);
+   checkToken(QUESTION, "?", lexer.next());
+   checkEOF(lexer.next());
+}
+
+
+@Test
+void unitTestLParen() throws LexicalException {
+   String input = "(";
+   ILexer lexer = ComponentFactory.makeLexer(input);
+   checkToken(LPAREN, "(", lexer.next());
+   checkEOF(lexer.next());
+}
+
+
+@Test
+void unitTestRParen() throws LexicalException {
+   String input = ")";
+   ILexer lexer = ComponentFactory.makeLexer(input);
+   checkToken(RPAREN, ")", lexer.next());
+   checkEOF(lexer.next());
+}
+
+
+@Test
+void unitTestRSquare() throws LexicalException {
+   String input = "]";
+   ILexer lexer = ComponentFactory.makeLexer(input);
+   checkToken(RSQUARE, "]", lexer.next());
+   checkEOF(lexer.next());
+}
+
+
+@Test
+void unitTestBang() throws LexicalException {
+   String input = "!";
+   ILexer lexer = ComponentFactory.makeLexer(input);
+   checkToken(BANG, "!", lexer.next());
+   checkEOF(lexer.next());
+}
+
+
+@Test
+void unitTestPlus() throws LexicalException {
+   String input = "+";
+   ILexer lexer = ComponentFactory.makeLexer(input);
+   checkToken(PLUS, "+", lexer.next());
+   checkEOF(lexer.next());
+}
+
+
+@Test
+void unitTestDiv() throws LexicalException {
+   String input = "/";
+   ILexer lexer = ComponentFactory.makeLexer(input);
+   checkToken(DIV, "/", lexer.next());
+   checkEOF(lexer.next());
+}
+
+
+@Test
+void unitTestMod() throws LexicalException {
+   String input = "%";
+   ILexer lexer = ComponentFactory.makeLexer(input);
+   checkToken(MOD, "%", lexer.next());
+   checkEOF(lexer.next());
+}
+
+
+@Test
+void unitTestReturn() throws LexicalException {
+   String input = "^";
+   ILexer lexer = ComponentFactory.makeLexer(input);
+   checkToken(RETURN, "^", lexer.next());
+   checkEOF(lexer.next());
+}
+
+
+@Test
+void unitTestEq() throws LexicalException {
+   String input = "==";
+   ILexer lexer = ComponentFactory.makeLexer(input);
+   checkToken(EQ, "==", lexer.next());
+   checkEOF(lexer.next());
+}
+
+
+@Test
+void unitTestAssign() throws LexicalException {
+   String input = "=";
+   ILexer lexer = ComponentFactory.makeLexer(input);
+   checkToken(ASSIGN, "=", lexer.next());
+   checkEOF(lexer.next());
+}
+
+
+@Test
+void unitTestLe() throws LexicalException {
+   String input = "<=";
+   ILexer lexer = ComponentFactory.makeLexer(input);
+   checkToken(LE, "<=", lexer.next());
+   checkEOF(lexer.next());
+}
+
+
+@Test
+void unitTestBlockOpen() throws LexicalException {
+   String input = "<:";
+   ILexer lexer = ComponentFactory.makeLexer(input);
+   checkToken(BLOCK_OPEN, "<:", lexer.next());
+   checkEOF(lexer.next());
+}
+
+
+@Test
+void unitTestLt() throws LexicalException {
+   String input = "<";
+   ILexer lexer = ComponentFactory.makeLexer(input);
+   checkToken(LT, "<", lexer.next());
+   checkEOF(lexer.next());
+}
+
+
+@Test
+void unitTestGe() throws LexicalException {
+   String input = ">=";
+   ILexer lexer = ComponentFactory.makeLexer(input);
+   checkToken(GE, ">=", lexer.next());
+   checkEOF(lexer.next());
+}
+
+
+@Test
+void unitTestGt() throws LexicalException {
+   String input = ">";
+   ILexer lexer = ComponentFactory.makeLexer(input);
+   checkToken(GT, ">", lexer.next());
+   checkEOF(lexer.next());
+}
+
+
+@Test
+void unitTestAnd() throws LexicalException {
+   String input = "&&";
+   ILexer lexer = ComponentFactory.makeLexer(input);
+   checkToken(AND, "&&", lexer.next());
+   checkEOF(lexer.next());
+}
+
+
+@Test
+void unitTestBitAnd() throws LexicalException {
+   String input = "&";
+   ILexer lexer = ComponentFactory.makeLexer(input);
+   checkToken(BITAND, "&", lexer.next());
+   checkEOF(lexer.next());
+}
+
+
+@Test
+void unitTestOr() throws LexicalException {
+   String input = "||";
+   ILexer lexer = ComponentFactory.makeLexer(input);
+   checkToken(OR, "||", lexer.next());
+   checkEOF(lexer.next());
+}
+
+
+@Test
+void unitTestBitOr() throws LexicalException {
+   String input = "|";
+   ILexer lexer = ComponentFactory.makeLexer(input);
+   checkToken(BITOR, "|", lexer.next());
+   checkEOF(lexer.next());
+}
+
+
+@Test
+void unitTestExp() throws LexicalException {
+   String input = "**";
+   ILexer lexer = ComponentFactory.makeLexer(input);
+   checkToken(EXP, "**", lexer.next());
+   checkEOF(lexer.next());
+}
+
+
+@Test
+void unitTestTimes() throws LexicalException {
+   String input = "*";
+   ILexer lexer = ComponentFactory.makeLexer(input);
+   checkToken(TIMES, "*", lexer.next());
+   checkEOF(lexer.next());
+}
+
+
+@Test
+void unitTestLine() throws LexicalException {
+   String input = ",\n;";
+   ILexer lexer = ComponentFactory.makeLexer(input);
+   checkToken(COMMA, ",", 1, 1, lexer.next());
+   checkToken(SEMI, ";", 2, 1, lexer.next());
+   checkEOF(lexer.next());
+}
+
+
+@Test
+void unitTestColumn() throws LexicalException {
+   String input = ",;";
+   ILexer lexer = ComponentFactory.makeLexer(input);
+   checkToken(COMMA, ",", 1, 1, lexer.next());
+   checkToken(SEMI, ";", 1, 2, lexer.next());
+   checkEOF(lexer.next());
+}
+
+
+@Test
+void unitTestRepeatedEOF() throws LexicalException {
+   String input = ",";
+   ILexer lexer = ComponentFactory.makeLexer(input);
+   checkToken(COMMA, ",", 1, 1, lexer.next());
+   checkEOF(lexer.next());
+   checkEOF(lexer.next());
+   checkEOF(lexer.next());
+}
+
+
+@Test
+void unitTestEmptyString() throws LexicalException {
+   String input = "\"\"";
+   ILexer lexer = ComponentFactory.makeLexer(input);
+   checkString("", lexer.next());
+}
+
+
+@Test
+void unitTestMultiLineString() {
+   String input = "\"value\n\"";
+   ILexer lexer = ComponentFactory.makeLexer(input);
+   LexicalException e = assertThrows(LexicalException.class, () -> lexer.next());
+   show("Error message from unitTestMultiLineString: " + e.getMessage());
+}
+
+
+@Test
+void unitTestInvalidString() {
+   String input = "\"31";
+   ILexer lexer = ComponentFactory.makeLexer(input);
+   LexicalException e = assertThrows(LexicalException.class, () -> lexer.next());
+   show("Error message from unitTestInvalidString: " + e.getMessage());
+}
+
+
+@Test
+void unitTestInvalidInteger() {
+   String input = "2147483649";
+   ILexer lexer = ComponentFactory.makeLexer(input);
+   LexicalException e = assertThrows(LexicalException.class, () -> lexer.next());
+   show("Error message from unitTestInvalidInteger: " + e.getMessage());
+}
+//I have no clue how to paste with pretty formatting. Someone plz fix :)
+@Test
+void lineTest() throws LexicalException {
+   String input = """
+mother_is_juicing watermelons
+on_the_breakfast_island
+And_with frail_hands_she grips_the_NutriBullet
+##And ##the_bite_of ##its_blades_reminds ##me
+Of_a future_that I_am_in_no_way part_of
+""";
+   ILexer lexer = ComponentFactory.makeLexer(input);
+   checkToken(IDENT, "mother_is_juicing", 1,1, lexer.next());
+   checkToken(IDENT, "watermelons", 1,19, lexer.next());
+   checkToken(IDENT, "on_the_breakfast_island", 2,1, lexer.next());
+   checkToken(IDENT, "And_with", 3,1, lexer.next());
+   checkToken(IDENT, "frail_hands_she", 3,10, lexer.next());
+   checkToken(IDENT, "grips_the_NutriBullet", 3,26, lexer.next());
+   checkToken(IDENT, "Of_a", 5,1, lexer.next());
+   checkToken(IDENT, "future_that", 5,6, lexer.next());
+   checkToken(IDENT, "I_am_in_no_way", 5,18, lexer.next());
+   checkToken(IDENT, "part_of", 5,33, lexer.next());
+   checkEOF(lexer.next());
+}
+
+
 }
