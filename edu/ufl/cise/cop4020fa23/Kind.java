@@ -66,7 +66,8 @@ public enum Kind {
 	RARROW, // ->
 	BOX, //  []
 	EOF,
-	ERROR;
+	ERROR, 
+	//KW_IF, KW_FI, KW_ELSE, KW_WRITE, KW_VOID, KW_CONSOLE, TYPE, COLOR_OP, IMAGE_OP;
 
 	
 }
