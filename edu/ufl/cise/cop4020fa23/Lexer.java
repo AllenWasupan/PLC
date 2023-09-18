@@ -23,7 +23,7 @@ public class Lexer implements ILexer {
 	int pos;
 	int length = 1;
 	int line = 1;
-	int column = 0;
+	int column = 1;
     int startPos;
     char[] source;
     int count = 0;
@@ -119,18 +119,19 @@ public class Lexer implements ILexer {
 	    char[] chars = (input+'~').toCharArray();
         Kind k;
         source = new char[0];
-        
+        count = 1;
 		while(true) {
             
 			char ch = chars[pos];
-
+            
             if (ch != ' ' && ch != '\n') {
                 source = Arrays.copyOf(source, source.length + 1);
                 source[source.length - 1] = ch;
             }
-            
+
 			switch (state) {
                 
+            
 				case START -> {
                     System.out.println("Character: \"" + ch + "\"");
                     System.out.print("Source: ");
@@ -140,33 +141,21 @@ public class Lexer implements ILexer {
                     System.out.println("StartPos: " + startPos);
                     System.out.println("Length: " + length);
                     System.out.println("\n");
-                    //column++;
+                    
+                    
 
                     if (pos < input.length() && (getASCII(input)[pos] == 10)) {
                         ch = '\n';
                     }
                     switch (ch) {
-                        
-                        case ' ','\t','\r' -> {
-                            pos++;
-                        }
-
-                        case '\n'-> {line++;pos++;startPos=0;}
-
+                        case ' ','\t','\r' -> {pos++;count++;column=count-source.length;}
+                        case '\n'-> {line++;pos++;count=1;}
                         case '+' -> {length=1;pos++;return Kind.PLUS;}
                         case '#' -> {pos++;state = States.HASH;}
-
                         case 'A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z',
                         'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z',
-                                '$','_' -> {
-                            pos++;
-                            state = States.IN_IDENT;
-                            System.out.println(source);
-                        }
-                        case '\"' -> {
-                            state = States.STRING_LIT;
-                            pos++;length++;
-                        }
+                                '$','_' -> {pos++;state = States.IN_IDENT;}
+                        case '\"' -> {state = States.STRING_LIT;pos++;length++;}
                         case '1','2','3','4','5','6','7','8','9' -> {state = States.NUM_LIT;pos++;}
                         case '(' -> {pos++;return Kind.LPAREN;}
                         case ')' -> {pos++;return Kind.RPAREN;}
@@ -179,10 +168,9 @@ public class Lexer implements ILexer {
                         case '-' -> {state = States.MINUS;pos++;}
                         case '=' -> {state = States.HAVE_EQUALS; pos++;}
                         case '0' -> {state = States.HAVE_ZERO;pos++;}
-                        case '%' -> {pos++;return Kind.MOD;}
-                        case '&' -> {state = States.AND;pos++;}
+                        case '%' -> {pos++;count++;column=count-source.length;return Kind.MOD;}
+                        case '&' -> {state = States.AND;pos++;count++;column=count-source.length;}
                         case '|' -> {pos++;state = States.OR;}
-                        //case '@' -> {state = States.STRING_LIT;pos++;}
                         case '!' -> {state = States.EXC; pos++;}
                         case ';' -> {pos++;return Kind.SEMI;}
                         case ',' -> {pos++;column++;return Kind.COMMA;}
@@ -190,7 +178,6 @@ public class Lexer implements ILexer {
                         case '?' -> {pos++;return Kind.QUESTION;}
                         case '~' -> {return Kind.EOF;}
                         default -> {throw new LexicalException("not valid lexer bug");}
-                    
                     }
                     }
                 case HASH -> {
@@ -249,13 +236,31 @@ public class Lexer implements ILexer {
                 case AND -> {
                     switch (ch) {
                         case '&' -> {
-                            source = Arrays.copyOf(source, source.length + 1);
-                            source[source.length - 1] = ch;
+
+                            System.out.print("Source: ");
+                            System.out.println(source);
+                            System.out.println("Source Length: " + source.length);
+                            
+                            System.out.println("Count: " + count);
+                            System.out.println("col: " + column);
+                            count++;
+                            column=count-source.length;
                             pos++;
                             length=source.length;
                             return Kind.AND;
                         }
                         default -> {
+                            
+
+                            System.out.print("Source: ");
+                            System.out.println(source);
+                            System.out.println("Source Length: " + source.length);
+                            
+                    System.out.println("Count: " + count);
+                            System.out.println("col: " + column);
+                            length=source.length;
+                            //count++;
+                            column=count-source.length;
                             return Kind.BITAND;
                         }
                     }
@@ -278,17 +283,25 @@ public class Lexer implements ILexer {
                         case 'A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z',
                                 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z',
                                 '$','_','0','1','2','3','4','5','6','7','8','9' -> {
-                            
                             pos++;
-                            //source = Arrays.copyOf(source, source.length + 1);
-                            //source[source.length - 1] = ch;
-                            
-                            
+                            length = source.length;
                         }
                         
                         default -> {
                             System.out.println("what ");
+                            System.out.print("Ch: ");
+                            System.out.println(ch);
+                            System.out.print("Source: ");
                             System.out.println(source);
+                            System.out.println("Pos: " + pos);
+                            System.out.println("Length: " + length);
+                            System.out.println("Source Length: " + source.length);
+                            System.out.println("StartPos: " + startPos);
+                            System.out.println("\n");
+                            System.out.println("isword");
+                            //source = Arrays.copyOf(source, source.length - 1);
+                            length = source.length;
+
                             return isWord(source);
                         }
                     }
@@ -322,7 +335,7 @@ public class Lexer implements ILexer {
                     switch (ch) {
                         case '=' -> {
                             pos++;
-                            length++;
+                            length = source.length;
                             return Kind.EQ;
                         }
                         default -> {return Kind.ASSIGN;}
@@ -333,9 +346,6 @@ public class Lexer implements ILexer {
                 case IN_NUMB -> {
                     switch(ch) {
                         case '0','1','2','3','4','5','6','7','8','9' -> {
-                            
-                            source = Arrays.copyOf(source, source.length + 1);
-                            source[source.length - 1] = ch;
                             pos++;
                         }
                         default -> {
@@ -460,7 +470,8 @@ public class Lexer implements ILexer {
 				//default -> {return Kind.EOF;}
 				default -> throw new LexicalException("invalid lexer bug");
 			}
-		}
+            
+        }
 		
 	}
 	@Override
