@@ -1,0 +1,17 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"type": "java (buildArtifact)",
+			"targetPath": "${workspaceFolder}/${workspaceFolderBasename}.jar",
+			"elements": [
+				"${compileOutput}",
+				"${testCompileOutput}",
+				"${dependencies}",
+				"${testDependencies}"
+			],
+			"problemMatcher": [],
+			"label": "java (buildArtifact): PLC"
+		}
+	]
+}
