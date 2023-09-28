@@ -57,15 +57,19 @@ public class Lexer implements ILexer {
             
             case "TRUE", "FALSE" -> Kind.BOOLEAN_LIT;
             case "BLACK", "BLUE", "CYAN", "DARK_GRAY", "GRAY", "GREEN", "LIGHT_GRAY", "MAGENTA", "ORANGE", "PINK", "RED", "WHITE", "YELLOW" -> Kind.CONST;
-            case "if" -> Kind.KW_IF;
-            case "fi" -> Kind.KW_FI;
-            case "else" -> Kind.KW_ELSE;
-            case "write" -> Kind.KW_WRITE;
-            case "console" -> Kind.KW_CONSOLE;
-            case "void" -> Kind.KW_VOID;
-            case "int", "float", "string", "boolean", "color", "image" -> Kind.TYPE;
-            case "getRed", "getGreen", "getBlue" -> Kind.COLOR_OP;
-            case "getWidth", "getHeight" -> Kind.IMAGE_OP;
+            case "if" -> Kind.RES_if;
+            case "fi" -> Kind.RES_fi;
+            case "write" -> Kind.RES_write;
+            case "void" -> Kind.RES_void;
+            case "int" -> Kind.RES_int;
+            case "string" -> Kind.RES_string;
+            case "boolean" -> Kind.RES_boolean;
+            case "image" -> Kind.RES_image;
+            case "getRed" -> Kind.RES_red;
+            case "getGreen" -> Kind.RES_green;
+            case "getBlue" -> Kind.RES_blue;
+            case "getWidth" -> Kind.RES_width;
+            case "getHeight" -> Kind.RES_height;
             default -> Kind.IDENT;
         };
     }
@@ -182,7 +186,7 @@ public class Lexer implements ILexer {
                         case '%' -> {pos++;return Kind.MOD;}
                         case '&' -> {state = States.AND;pos++;}
                         case '|' -> {pos++;state = States.OR;}
-                        case '!' -> {state = States.EXC; pos++;}
+                        case '!' -> {pos++;return Kind.BANG;}
                         case ';' -> {pos++;return Kind.SEMI;}
                         case ',' -> {pos++;return Kind.COMMA;}
                         case '^' -> {pos++;return Kind.RETURN;}
@@ -410,30 +414,18 @@ public class Lexer implements ILexer {
                         }
                     }
                 }
-                case EXC -> {
-                    switch (ch) {
-                        case '=' -> {
-                            pos++;
-                            return Kind.NOT_EQUALS;
-                        }
-                        default -> {
-                            //pos++;
-                            return Kind.BANG;
-                        }
-                    }
-                }
                 case LEFT -> {
                     switch (ch) {
                         case '=' -> {
                             pos++;
                             length++;
                             return Kind.LE;
-                        }
+                        }/*
                         case '-' -> {
                             pos++;
                             length++;
-                            return Kind.LARROW;
-                        }
+                            return Kind.LEFTARROW;
+                        }*/
                         case ':' -> {
                             pos++;
                             length++;
