@@ -121,6 +121,20 @@ public class ExpressionParser implements IParser {
 		Expr e = expr();
 		return e;
 	}
+    
+    void match(Kind kind) throws LexicalException {
+        if (isKind(kind)) {
+            t = lexer.next();
+        }
+        else {
+            throw new LexicalException("Parsing bug");
+        }
+    }
+
+    // goes to next token
+    void consume() throws LexicalException {
+        t = lexer.next();
+    }
 
     //Expr::=
     //    ConditionalExpr | LogicalOrExpr
@@ -140,148 +154,6 @@ public class ExpressionParser implements IParser {
         return null;
 	}
 
-	void match(Kind kind) throws LexicalException {
-        if (isKind(kind)) {
-            t = lexer.next();
-        }
-        else {
-            throw new LexicalException("Parsing bug");
-        }
-    }
-
-    // goes to next token
-    void consume() throws LexicalException {
-        t = lexer.next();
-    }
-	/* 
-    Program Program() {
-        System.out.println("Program()");
-        IToken firstToken = t;
-        Program prog = null;
-        NameDef name = null;
-        NameDef name1 = null;
-        NameDef name2 = null;
-        Declaration dec = null;
-        Statement state = null;
-        ArrayList<NameDef> params = new ArrayList<NameDef>();
-        List<ASTNode> decsAndStates = new ArrayList<ASTNode>();
-        Types ah = null;
-        try {
-            if (isKind(TYPE, RES_void)) {
-                IToken op = t; // get type
-                consume();
-                IToken ident = t; // get ident
-                consume();
-                //System.out.println(Types.Type.toType(op.getText()));
-                //System.out.println(ident.getText());
-                match(LPAREN);
-                // check if NameDef exists
-                //name = NameDef(); // this may break things if it gives error
-                //System.out.println("hi");
-                //if ((name = NameDef()) != null) {
-                if ((name = NameDef()) != null) {
-                    System.out.println("141" + name.getType());
-                    params.add(name);
-                    // if NameDef does exist
-                    consume();
-
-                    while(isKind(COMMA)) {
-                        consume();
-                        //System.out.println("147" + name);
-                        name1 = NameDef();
-                        //System.out.println("147" + name1.getType());
-                        params.add(name1);
-                        consume();
-                    }
-                }
-                match(RPAREN);
-                int count = 0;
-                do {
-                    if(count>0) {consume();}
-                    if((dec = Declaration()) != null) {
-                        System.out.println("160 in dec");
-                        decsAndStates.add(dec);
-                        consume();
-                        System.out.println(t.getText() + " & " + t.getKind());
-                        count++;
-                    }
-                    else if ((state = Statement()) != null) {
-                        System.out.println("165 in state");
-                        decsAndStates.add(state);
-                        consume();
-                        count++;
-                    }
-
-                } while (!isKind(SEMI));
-
-
-                decsAndStates.remove(decsAndStates.size()-1);
-                prog = new Program(firstToken,Types.Type.toType(op.getText()),ident.getText(),params,decsAndStates);
-            }
-
-        } catch (PLCCompilerException e) {}
-
-        return prog;
-    }
-
-    //    NameDef::=
-    //    Type IDENT | //yields NameDef
-    //    Type Dimension IDENT //yields NameDefWithDimension
-    NameDef NameDef() throws PLCCompilerException {
-        System.out.println("NameDef()");
-        NameDef namedef = null;
-        IToken firstToken = t;
-        IToken type = null;
-        IToken name = null;
-        Dimension dim = null;
-        //System.out.println(t.getText() + " && " + t.getKind());
-        if(isKind(TYPE)) {
-            // idk if i need to do consume()
-            //System.out.println("189" + t.getKind());
-            type = t;
-            consume();
-            //System.out.println("192" + t.getKind());
-            // if there is an IDENT
-            if(t.getKind() == IDENT) {
-                name = t; // then gets the "name"?
-                //System.out.println("196 if(t.getKind() == IDENT)");
-                namedef = new NameDef(firstToken,type,name);
-            }
-            // else if dimension exists
-            else if ((dim = Dimension()) != null) {
-                //dim = Dimension();
-                //System.out.println("202 else if ((dim = Dimension()) != null)");
-                consume();
-                type = t;
-                namedef = new NameDefWithDim(firstToken,type,type,dim);
-            }
-        }
-        //System.out.println("hi");
-        return namedef;
-    }
-
-    //    Declaration::=
-    //    NameDef (('=' | '<-') Expr)?  //yields VarDeclaration
-    VarDeclaration Declaration() throws PLCCompilerException {
-        System.out.println("Declaration()");
-        VarDeclaration varDec = null;
-        IToken firstToken = t;
-        IToken op = null;
-        Expr right = null;
-        //consume();
-        System.out.println(t.getText() + " 1& " + t.getKind());
-        NameDef left = NameDef();
-        //consume();
-        if(isKind(ASSIGN, LARROW)) {
-            op = t;
-            System.out.println(t.getText() + " && " + t.getKind());
-            consume();
-            right = expr();
-            return new VarDeclaration(firstToken, left, op, right);// idk what im doing with this line
-        }
-        return new VarDeclaration(firstToken, left, op, right);
-    }
-*/
     //ConditionalExpr ::= ? Expr -> Expr , Expr
     Expr ConditionalExpr() throws PLCCompilerException {
         System.out.println("ConditionalExpr()");
@@ -347,8 +219,7 @@ public class ExpressionParser implements IParser {
         return left;
     }
 
-    //ComparisonExpr ::=
-    //    AdditiveExpr ( ('<' | '>' | '==' | '!=' | '<=' | '>=') AdditiveExpr)*
+    ////ComparisonExpr ::= AdditiveExpr ( ('<' | '>' | '==' | '!=' | '<=' | '>=') AdditiveExpr)*
     Expr ComparisonExpr() throws Exception {
         System.out.println("ComparisonExpr()");
         IToken firstToken = t;
@@ -356,6 +227,7 @@ public class ExpressionParser implements IParser {
         Expr right = null;
         IToken op = null;
         left = AdditiveExpr();
+
         while(isKind(LT,GT,EQ,LE,GE)) {
             op = t;
             consume();
@@ -364,7 +236,48 @@ public class ExpressionParser implements IParser {
         }
         return left;
     }
+     
+    /*
+    //ComparisonExpr ::= PowExpr ( (< | > | == | <= | >=) PowExpr)*
+    Expr ComparisonExpr() throws Exception {
+        System.out.println("ComparisonExpr()");
+        IToken firstToken = t;
+        Expr left = null;
+        Expr right = null;
+        IToken op = null;
+        left = PowExpr();
 
+        while(isKind(LT,GT,EQ,LE,GE)) {
+            op = t;
+            consume();
+            right = PowExpr();
+            left = new BinaryExpr(firstToken, left, op, right);
+        }
+
+        if (left == null) {
+            throw new Exception();
+        }
+        return left;
+    }
+    //PowExpr ::= AdditiveExpr ** PowExpr |   AdditiveExpr
+    //(AdditiveExpr ** PowExpr) |   AdditiveExpr
+    Expr PowExpr() throws Exception {
+        System.out.println("ComparisonExpr()");
+        IToken firstToken = t;
+        Expr e = null;
+        Expr left = null;
+        Expr right = null;
+        IToken op = null;
+        while() {
+            left = AdditiveExpr();
+            op = t;
+            consume();
+            right = PowExpr();
+
+            e = new BinaryExpr(firstToken, left, op, right);
+        }
+        
+    }*/
     //AdditiveExpr ::= MultiplicativeExpr ( ('+'|'-') MultiplicativeExpr )*
     Expr AdditiveExpr() throws Exception {
         System.out.println("AdditiveExpr()");
@@ -414,40 +327,37 @@ public class ExpressionParser implements IParser {
                 e = UnaryExpr();
                 return new UnaryExpr(firstToken,op,e);
             }
-            throw new LexicalException("Expected int literal or (");
-
-        } catch (PLCCompilerException ex) {}
-
-        try {
-            return PostfixExpr(); //FUDGE UNARYEXPRPOSTFIX
-        } catch (LexicalException ex) {}
-
-        throw new LexicalException("Expected int literal or (");
-
+            else {
+                return PostfixExpr();
+            }
+            
+            
+        } catch (PLCCompilerException ex) {throw new LexicalException("Expected int literal or (");}
     }
 
     //PostfixExpr::= PrimaryExpr (PixelSelector | ε ) (ChannelSelector | ε ) 
     // ε means empty, so Expr e = null;
-    /*
-        get primaryExpr
-        get pixelSelector
-        if pixelSelector is not valid
-            get channelSelector
-            if channelSelector not valid
-                return primaryExpr
-            else return PostFixExpr(primaryExpr, null, channelSelector)
-        otherwise pixelSelector is valid
-        get channelSelector
-        if channelSelector not valid
-        return PostFixExpr(primaryExpr, pixelSelector, null)
-        else
-        return PostFixExpr(primaryExpr, pixelSelector, channelSelector)
-     */
     Expr PostfixExpr() throws PLCCompilerException {
         System.out.println("PostfixExpr()");
         IToken firstToken = t;
-        Expr e = PrimaryExpr();
-        return e;
+        Expr prim = PrimaryExpr();
+        
+        PixelSelector pix = PixelSelector();
+        if (pix == null) {
+            ChannelSelector chan = ChannelSelector();
+            if (chan == null) {
+                return prim;
+            }
+            System.out.println("nice()");
+            return new PostfixExpr(firstToken, prim, null, chan);
+        }
+        else {
+            ChannelSelector chan = ChannelSelector();
+            if (chan == null) {
+                return new PostfixExpr(firstToken, prim,pix,null);
+            }
+            return new PostfixExpr(firstToken, prim,pix,chan);
+        }
     }
     
     //PrimaryExpr ::=STRING_LIT | NUM_LIT |  BOOLEAN_LIT | IDENT | ( Expr ) | CONST |  ExpandedPixelExpr
@@ -456,8 +366,6 @@ public class ExpressionParser implements IParser {
         //consume();
         IToken firstToken = t;
         Expr e = null;
-        Expr e1 = null;
-        Expr e2 = null;
 
         try {
         if (isKind(STRING_LIT)) {
@@ -472,7 +380,10 @@ public class ExpressionParser implements IParser {
             e = new BooleanLitExpr(firstToken);
             consume();
         }
+        
         if (isKind(IDENT)) {
+            System.out.println("ident");
+            System.out.println("e " + e);
             e = new IdentExpr(firstToken);
             consume();
         }
@@ -486,8 +397,12 @@ public class ExpressionParser implements IParser {
             e = new ConstExpr(firstToken);
             consume();
         }
+        
         System.out.println("bruh()");
         System.out.println("e " + e);
+        if (e == null) {
+            throw new SyntaxException("Expected literal or (");
+        }
         return e;
 
         } catch(PLCCompilerException ignored) {
@@ -502,89 +417,70 @@ public class ExpressionParser implements IParser {
         System.out.println("PixelSelector()");
         IToken firstToken = t;
         Expr e1 = null, e2 = null;
-
         if(isKind(LSQUARE)) {
             e1 = expr();
             consume();
         }
+        else {
+            return null;
+        }
+
         if(isKind(COMMA)) {
             e2 = expr();
             consume();
         }
+
         if(isKind(RSQUARE)) {
-            return new PixelSelector(firstToken, e1, e2);
+            consume();
         }
-        throw new PLCCompilerException("PixelSelector Error");
+
+		return new PixelSelector(firstToken, e1, e2);
     }
-/* 
-    //    Dimension::=
-    //            '[' Expr ',' Expr ']' //yields Dimension
-    Dimension Dimension() throws PLCCompilerException {
-        System.out.println("Dimension()");
+        //PixelSelector::=
+    //    '[' Expr ',' Expr ']'
+    ExpandedPixelExpr ExpandedPixelExpr() throws PLCCompilerException { // '[' Expr ',' Expr ']'
+        System.out.println("ExpandedPixelExpr()");
         IToken firstToken = t;
-        Expr width = null, height = null;
+        Expr e1 = null, e2 = null, e3 = null;;
 
         if(isKind(LSQUARE)) {
-            width = expr();
+            e1 = expr();
+            consume();
+        }
+        
+        if(isKind(COMMA)) {
+            e2 = expr();
             consume();
         }
         if(isKind(COMMA)) {
-            height = expr();
+            e3 = expr();
             consume();
         }
         if(isKind(RSQUARE)) {
-            return new Dimension(firstToken, width, height);
+            consume();
         }
-        throw new PLCCompilerException("Dimension Error");
+        else {
+            throw new PLCCompilerException("ExpandedPixelExpr Error");
+        }
+		if (e1 == null || e2 == null) {
+			throw new PLCCompilerException("ExpandedPixelExpr Error");
+		}
+		return new ExpandedPixelExpr(firstToken, e1, e2, e3);
     }
 
-    //    Statement::=
-    //    IDENT PixelSelector? '=' Expr | //yields AssignmentStatement
-    //    IDENT PixelSelector? ‘<-’ Expr| //yields ReadStatement
-    //            'write' Expr '->' Expr| //yields WriteStatement
-    //            '^' Expr                //yields ReturnStatement
-    Statement Statement() throws PLCCompilerException {
-        System.out.println("Statement()");
+    //ChannelSelector ::= : red | : green | : blue 
+    ChannelSelector ChannelSelector() throws PLCCompilerException {
+        System.out.println("PixelSelector()");
         IToken firstToken = t;
-        PixelSelector pixSelect = null;
-        String name = null;
-        Expr e = null;
-        Expr e1 = null;
-        Statement statement = null;
-        if(isKind(IDENT)) {
-            pixSelect = PixelSelector();
-            if(pixSelect != null) {
-                //consume();
-                if(isKind(ASSIGN)) {
-                    e = Expr();
-                    statement = new AssignmentStatement(firstToken,name,pixSelect,e);
-                }
-                else if (isKind(LARROW)) {
-                    e = Expr();
-                    statement = new ReadStatement(firstToken,name,pixSelect,e);
-                }
-                else {
-                    throw new SyntaxException("Statement() expected '=' or '<-'");
-                }
-            }
+        IToken color = null;
+        if(isKind(RES_blue,RES_green,RES_red)) {
+            color = t;
+            consume();
+            return new ChannelSelector(firstToken, color);
         }
-        else if (isKind(RES_write)) {
-            e = expr();
-            match(RARROW);
-            e1 = expr();
-            statement = new WriteStatement(firstToken, e, e1);
+        else {
+            return null;
         }
-        else if (isKind(RETURN)) {
-            e = expr();
-            statement = new ReturnStatement(firstToken, e);
-        }
-        return statement;
     }
-*/
-}
-/*
-abstract class ASTNode
-{
-    public abstract Object visit(ASTVisitor v, Object arg);
 
-}*/
+}

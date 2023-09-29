@@ -56,7 +56,7 @@ public class Lexer implements ILexer {
         return switch (str) {
             
             case "TRUE", "FALSE" -> Kind.BOOLEAN_LIT;
-            case "BLACK", "BLUE", "CYAN", "DARK_GRAY", "GRAY", "GREEN", "LIGHT_GRAY", "MAGENTA", "ORANGE", "PINK", "RED", "WHITE", "YELLOW" -> Kind.CONST;
+            case "BLACK", "BLUE", "CYAN", "DARK_GRAY", "GRAY", "GREEN", "LIGHT_GRAY", "MAGENTA", "ORANGE", "PINK", "RED", "WHITE", "YELLOW", "Z" -> Kind.CONST;
             case "if" -> Kind.RES_if;
             case "fi" -> Kind.RES_fi;
             case "write" -> Kind.RES_write;
@@ -65,11 +65,14 @@ public class Lexer implements ILexer {
             case "string" -> Kind.RES_string;
             case "boolean" -> Kind.RES_boolean;
             case "image" -> Kind.RES_image;
-            case "getRed" -> Kind.RES_red;
-            case "getGreen" -> Kind.RES_green;
-            case "getBlue" -> Kind.RES_blue;
-            case "getWidth" -> Kind.RES_width;
-            case "getHeight" -> Kind.RES_height;
+            case "red" -> Kind.RES_red;
+            case "green" -> Kind.RES_green;
+            case "blue" -> Kind.RES_blue;
+            case "width" -> Kind.RES_width;
+            case "height" -> Kind.RES_height;
+            case "pixel" -> Kind.RES_pixel;
+            case "do" -> Kind.RES_do;
+            case "od" -> Kind.RES_od;
             default -> Kind.IDENT;
         };
     }
@@ -125,6 +128,7 @@ public class Lexer implements ILexer {
         Kind k;
         source = new char[0];
         column=count;
+        length = source.length;
 		while(true) {
             
 			char ch = chars[pos];
@@ -192,7 +196,7 @@ public class Lexer implements ILexer {
                         case '^' -> {pos++;return Kind.RETURN;}
                         case '?' -> {pos++;return Kind.QUESTION;}
                         case '~' -> {return Kind.EOF;}
-                        default -> {throw new LexicalException("not valid lexer bug");}
+                        default -> {System.out.println("Throwing Lexical Exception.");throw new LexicalException("invalid lexer bug");}
                     }
                     }
                 case HASH -> {
