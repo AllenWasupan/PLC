@@ -13,6 +13,7 @@ import edu.ufl.cise.cop4020fa23.ast.BooleanLitExpr;
 import edu.ufl.cise.cop4020fa23.ast.ChannelSelector;
 import edu.ufl.cise.cop4020fa23.ast.ConditionalExpr;
 import edu.ufl.cise.cop4020fa23.ast.ConstExpr;
+import edu.ufl.cise.cop4020fa23.ast.ExpandedPixelExpr;
 import edu.ufl.cise.cop4020fa23.ast.Expr;
 import edu.ufl.cise.cop4020fa23.ast.IdentExpr;
 import edu.ufl.cise.cop4020fa23.ast.NumLitExpr;
@@ -459,5 +460,140 @@ class ExpressionParserTest_starter {
 			AST ast = getAST(input);
 		});
 	}
+	@Test
+	void unitTestLogicOrExpression() throws PLCCompilerException {
+   String input = """
+         x || y
+         """;
+   AST ast = getAST(input);
+   BinaryExpr expr = checkBinaryExpr(ast, Kind.OR);
+   checkIdentExpr(expr.getLeftExpr(), "x");
+   checkIdentExpr(expr.getRightExpr(), "y");
+}
+
+
+@Test
+void unitTestLogicBitOrExpression() throws PLCCompilerException {
+   String input = """
+         x | y
+         """;
+   AST ast = getAST(input);
+   BinaryExpr expr = checkBinaryExpr(ast, Kind.BITOR);
+   checkIdentExpr(expr.getLeftExpr(), "x");
+   checkIdentExpr(expr.getRightExpr(), "y");
+}
+
+
+@Test
+void unitTestLogicAndExpression() throws PLCCompilerException {
+   String input = """
+         x && y
+         """;
+   AST ast = getAST(input);
+   BinaryExpr expr = checkBinaryExpr(ast, Kind.AND);
+   checkIdentExpr(expr.getLeftExpr(), "x");
+   checkIdentExpr(expr.getRightExpr(), "y");
+}
+
+
+@Test
+void unitTestLogicBitAndExpression() throws PLCCompilerException {
+   String input = """
+         x & y
+         """;
+   AST ast = getAST(input);
+   BinaryExpr expr = checkBinaryExpr(ast, Kind.BITAND);
+   checkIdentExpr(expr.getLeftExpr(), "x");
+   checkIdentExpr(expr.getRightExpr(), "y");
+}
+
+
+@Test
+void unitTestNestedAndOrExpression() throws PLCCompilerException {
+   String input = """
+         x || y && z
+         """;
+   AST ast = getAST(input);
+   BinaryExpr expr = checkBinaryExpr(ast, Kind.OR);
+   checkIdentExpr(expr.getLeftExpr(), "x");
+   BinaryExpr innerExpr = checkBinaryExpr(expr.getRightExpr(), Kind.AND);
+   checkIdentExpr(innerExpr.getLeftExpr(), "y");
+   checkIdentExpr(innerExpr.getRightExpr(), "z");
+}
+
+
+@Test
+void unitTestLtExpression() throws PLCCompilerException {
+   String input = """
+         x < y
+         """;
+   AST ast = getAST(input);
+   BinaryExpr expr = checkBinaryExpr(ast, Kind.LT);
+   checkIdentExpr(expr.getLeftExpr(), "x");
+   checkIdentExpr(expr.getRightExpr(), "y");
+}
+
+
+@Test
+void unitTestPowExpression() throws PLCCompilerException {
+   String input = """
+         x ** y
+         """;
+   AST ast = getAST(input);
+   BinaryExpr expr = checkBinaryExpr(ast, Kind.EXP);
+   checkIdentExpr(expr.getLeftExpr(), "x");
+   checkIdentExpr(expr.getRightExpr(), "y");
+}
+
+
+@Test
+void unitTestWidthInUnaryExpression() throws PLCCompilerException {
+   String input = """
+         width 42
+         """;
+   AST ast = getAST(input);
+   UnaryExpr unaryWidth = checkUnaryExpr(ast, Kind.RES_width);
+   checkNumLitExpr(unaryWidth.getExpr(), 42);
+}
+
+
+@Test
+void unitTestHeightInUnaryExpression() throws PLCCompilerException {
+   String input = """
+         height 42
+         """;
+   AST ast = getAST(input);
+   UnaryExpr unaryWidth = checkUnaryExpr(ast, Kind.RES_height);
+   checkNumLitExpr(unaryWidth.getExpr(), 42);
+}
+
+
+@Test
+void unitTestNestedUnaryExpression() throws PLCCompilerException {
+   String input = """
+         width -42
+         """;
+   AST ast = getAST(input);
+   Expr unaryWidth = checkUnaryExpr(ast, Kind.RES_width).getExpr();
+   Expr unaryNegation = checkUnaryExpr(unaryWidth, Kind.MINUS).getExpr();
+   checkNumLitExpr(unaryNegation, 42);
+}
+
+
+@Test
+void unitTestExpandedPixelExpression() throws PLCCompilerException {
+   String input = """
+         [1, 2, 3]
+         """;
+   AST ast = getAST(input);
+   assertThat("", ast, instanceOf(ExpandedPixelExpr.class));
+   Expr red = ((ExpandedPixelExpr) ast).getRed();
+   Expr green = ((ExpandedPixelExpr) ast).getGreen();
+   Expr blue = ((ExpandedPixelExpr) ast).getBlue();
+   checkNumLitExpr(red, 1);
+   checkNumLitExpr(green, 2);
+   checkNumLitExpr(blue, 3);
+}
+
 
 }

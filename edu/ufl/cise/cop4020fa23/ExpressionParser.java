@@ -343,19 +343,22 @@ public class ExpressionParser implements IParser {
         Expr prim = PrimaryExpr();
         
         PixelSelector pix = PixelSelector();
+        ChannelSelector chan = ChannelSelector();
         if (pix == null) {
-            ChannelSelector chan = ChannelSelector();
+            //ChannelSelector chan = ChannelSelector();
             if (chan == null) {
                 return prim;
             }
-            System.out.println("nice()");
+            System.out.println("no pix()");
             return new PostfixExpr(firstToken, prim, null, chan);
         }
         else {
-            ChannelSelector chan = ChannelSelector();
-            if (chan == null) {
+            
+            if (chan.firstToken != firstToken) {
+                System.out.println("no chan()");
                 return new PostfixExpr(firstToken, prim,pix,null);
             }
+            System.out.println("nice()");
             return new PostfixExpr(firstToken, prim,pix,chan);
         }
     }
@@ -366,7 +369,7 @@ public class ExpressionParser implements IParser {
         //consume();
         IToken firstToken = t;
         Expr e = null;
-
+        System.out.println("kind " + t.kind());
         try {
         if (isKind(STRING_LIT)) {
             e = new StringLitExpr(firstToken);
@@ -438,7 +441,7 @@ public class ExpressionParser implements IParser {
     }
         //PixelSelector::=
     //    '[' Expr ',' Expr ']'
-    ExpandedPixelExpr ExpandedPixelExpr() throws PLCCompilerException { // '[' Expr ',' Expr ']'
+    ExpandedPixelExpr ExpandedPixelExpr() throws PLCCompilerException {
         System.out.println("ExpandedPixelExpr()");
         IToken firstToken = t;
         Expr e1 = null, e2 = null, e3 = null;;
@@ -462,7 +465,7 @@ public class ExpressionParser implements IParser {
         else {
             throw new PLCCompilerException("ExpandedPixelExpr Error");
         }
-		if (e1 == null || e2 == null) {
+		if (e1 == null || e2 == null || e3 == null) {
 			throw new PLCCompilerException("ExpandedPixelExpr Error");
 		}
 		return new ExpandedPixelExpr(firstToken, e1, e2, e3);
@@ -472,9 +475,8 @@ public class ExpressionParser implements IParser {
     ChannelSelector ChannelSelector() throws PLCCompilerException {
         System.out.println("PixelSelector()");
         IToken firstToken = t;
-        IToken color = null;
+        IToken color = t;
         if(isKind(RES_blue,RES_green,RES_red)) {
-            color = t;
             consume();
             return new ChannelSelector(firstToken, color);
         }

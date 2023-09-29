@@ -39,14 +39,6 @@ public class Lexer implements ILexer {
 	Kind isWord(char[] source2) {
         length = source.length;
         System.out.println("isword");
-        System.out.print("Source: ");
-        System.out.println(source);
-        System.out.println("Pos: " + pos);
-        System.out.println("Length: " + length);
-        System.out.println("Source Length: " + source.length);
-        System.out.println("StartPos: " + startPos);
-        System.out.println("\n");
-
         // forms arraylist into string
         String str = "";
         for (Object x : source2) {
@@ -156,7 +148,6 @@ public class Lexer implements ILexer {
                     System.out.println("Pos: " + pos);
                     System.out.println("StartPos: " + startPos);
                     System.out.println("Length: " + length);
-                    System.out.println("State: " + state);
                     System.out.println("Count: " + count);
                     System.out.println("Column: " + column);
                     System.out.println("\n");
@@ -192,6 +183,7 @@ public class Lexer implements ILexer {
                         case '|' -> {pos++;state = States.OR;}
                         case '!' -> {pos++;return Kind.BANG;}
                         case ';' -> {pos++;return Kind.SEMI;}
+                        case ':' -> {pos++;return Kind.COLON;}
                         case ',' -> {pos++;return Kind.COMMA;}
                         case '^' -> {pos++;return Kind.RETURN;}
                         case '?' -> {pos++;return Kind.QUESTION;}
