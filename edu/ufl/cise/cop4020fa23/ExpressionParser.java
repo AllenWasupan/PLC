@@ -41,6 +41,7 @@ import static edu.ufl.cise.cop4020fa23.Kind.RES_width;
 import static edu.ufl.cise.cop4020fa23.Kind.RPAREN;
 import static edu.ufl.cise.cop4020fa23.Kind.RSQUARE;
 import static edu.ufl.cise.cop4020fa23.Kind.STRING_LIT;
+import static edu.ufl.cise.cop4020fa23.Kind.BOOLEAN_LIT;
 import static edu.ufl.cise.cop4020fa23.Kind.TIMES;
 import static edu.ufl.cise.cop4020fa23.Kind.CONST;
 
@@ -426,13 +427,27 @@ public class ExpressionParser implements IParser {
     }
 
     //PostfixExpr::= PrimaryExpr (PixelSelector | ε ) (ChannelSelector | ε ) 
+    // ε means empty, so Expr e = null;
+    /*
+        get primaryExpr
+        get pixelSelector
+        if pixelSelector is not valid
+            get channelSelector
+            if channelSelector not valid
+                return primaryExpr
+            else return PostFixExpr(primaryExpr, null, channelSelector)
+        otherwise pixelSelector is valid
+        get channelSelector
+        if channelSelector not valid
+        return PostFixExpr(primaryExpr, pixelSelector, null)
+        else
+        return PostFixExpr(primaryExpr, pixelSelector, channelSelector)
+     */
     Expr PostfixExpr() throws PLCCompilerException {
         System.out.println("PostfixExpr()");
         IToken firstToken = t;
         Expr e = PrimaryExpr();
-
-
-        return PrimaryExpr();
+        return e;
     }
     
     //PrimaryExpr ::=STRING_LIT | NUM_LIT |  BOOLEAN_LIT | IDENT | ( Expr ) | CONST |  ExpandedPixelExpr
@@ -454,7 +469,7 @@ public class ExpressionParser implements IParser {
             consume();
         }
         if (isKind(BOOLEAN_LIT)) {
-            e = new IdentExpr(firstToken);
+            e = new BooleanLitExpr(firstToken);
             consume();
         }
         if (isKind(IDENT)) {
@@ -465,17 +480,20 @@ public class ExpressionParser implements IParser {
             consume();
             e = expr();
             match(RPAREN);
+            consume();
         }
         if(isKind(CONST)) {
             e = new ConstExpr(firstToken);
             consume();
         }
+        System.out.println("bruh()");
+        System.out.println("e " + e);
         return e;
 
         } catch(PLCCompilerException ignored) {
-            
+            throw new PLCCompilerException("Expected literal or (");
         }
-        throw new PLCCompilerException("Expected literal or (");
+        
     }
 
     //PixelSelector::=
@@ -564,9 +582,9 @@ public class ExpressionParser implements IParser {
     }
 */
 }
-
+/*
 abstract class ASTNode
 {
     public abstract Object visit(ASTVisitor v, Object arg);
 
-}
+}*/
