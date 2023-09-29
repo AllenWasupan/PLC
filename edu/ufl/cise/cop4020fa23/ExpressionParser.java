@@ -67,23 +67,21 @@ import edu.ufl.cise.cop4020fa23.exceptions.LexicalException;
 import edu.ufl.cise.cop4020fa23.exceptions.PLCCompilerException;
 import edu.ufl.cise.cop4020fa23.exceptions.SyntaxException;
 /**
-Expr::=  ConditionalExpr | LogicalOrExpr    
-ConditionalExpr ::=  ?  Expr  :  Expr  :  Expr 
-LogicalOrExpr ::= LogicalAndExpr (    (   |   |   ||   ) LogicalAndExpr)*
-LogicalAndExpr ::=  ComparisonExpr ( (   &   |  &&   )  ComparisonExpr)*
-ComparisonExpr ::= PowExpr ( (< | > | == | <= | >=) PowExpr)*
-PowExpr ::= AdditiveExpr ** PowExpr |   AdditiveExpr
-AdditiveExpr ::= MultiplicativeExpr ( ( + | -  ) MultiplicativeExpr )*
-MultiplicativeExpr ::= UnaryExpr (( * |  /  |  % ) UnaryExpr)*
-UnaryExpr ::=  ( ! | - | length | width) UnaryExpr  |  UnaryExprPostfix
-UnaryExprPostfix::= PrimaryExpr (PixelSelector | ε ) (ChannelSelector | ε )
-PrimaryExpr ::=STRING_LIT | NUM_LIT |  IDENT | ( Expr ) | Z 
-    ExpandedPixel  
-ChannelSelector ::= : red | : green | : blue
-PixelSelector  ::= [ Expr , Expr ]
-ExpandedPixel ::= [ Expr , Expr , Expr ]
-Dimension  ::=  [ Expr , Expr ]                         
-
+Expr::=  ConditionalExpr | LogicalOrExpr   
+ConditionalExpr ::=  ?  Expr  ->  Expr  ,  Expr  
+LogicalOrExpr ::= LogicalAndExpr (    (   |   |   ||   ) LogicalAndExpr)* 
+LogicalAndExpr ::=  ComparisonExpr ( (   &   |  &&   )  ComparisonExpr)* 
+ComparisonExpr ::= PowExpr ( (< | > | == | <= | >=) PowExpr)* 
+PowExpr ::= AdditiveExpr ** PowExpr |   AdditiveExpr 
+AdditiveExpr ::= MultiplicativeExpr ( ( + | -  ) MultiplicativeExpr )* 
+MultiplicativeExpr ::= UnaryExpr (( * |  /  |  % ) UnaryExpr)* 
+UnaryExpr ::=  ( ! | - | width | height) UnaryExpr  |  PostfixExpr 
+PostfixExpr::= PrimaryExpr (PixelSelector | ε ) (ChannelSelector | ε ) 
+PrimaryExpr ::=STRING_LIT | NUM_LIT |  IDENT | ( Expr ) | CONST | 
+    ExpandedPixelExpr 
+ChannelSelector ::= : red | : green | : blue 
+PixelSelector  ::= [ Expr , Expr ] 
+ExpandedPixelExpr ::= [ Expr , Expr , Expr ]
  */
 
 public class ExpressionParser implements IParser {
@@ -283,9 +281,7 @@ public class ExpressionParser implements IParser {
         return new VarDeclaration(firstToken, left, op, right);
     }
 */
-    //ConditionalExpr ::=
-    //    'if' '(' Expr ')' Expr 'else'  Expr 'fi'
-	//		? Expr -> Expr , Expr
+    //ConditionalExpr ::= ? Expr -> Expr , Expr
     Expr ConditionalExpr() throws PLCCompilerException {
         System.out.println("ConditionalExpr()");
         IToken firstToken = t;
@@ -422,43 +418,32 @@ public class ExpressionParser implements IParser {
         } catch (PLCCompilerException ex) {}
 
         try {
-            return UnaryExprPostfix(); //FUDGE UNARYEXPRPOSTFIX
+            return PostfixExpr(); //FUDGE UNARYEXPRPOSTFIX
         } catch (LexicalException ex) {}
 
         throw new LexicalException("Expected int literal or (");
 
     }
 
-    //UnaryExprPostfix::=
-    //    PrimaryExpr PixelSelector?
-    Expr UnaryExprPostfix() throws LexicalException {
-        System.out.println("UnaryExprPostfix()");
+    //PostfixExpr::= PrimaryExpr (PixelSelector | ε ) (ChannelSelector | ε ) 
+    Expr PostfixExpr() throws PLCCompilerException {
+        System.out.println("PostfixExpr()");
         IToken firstToken = t;
-
-//        try {
-//            Expr e = PrimaryExpr();
-//            consume();
-//            Expr e1 = PrimaryExpr();
-//            if (e1 == null) {
-//                throw new PLCCompilerException("sad");
-//            }
-//            PixelSelector p = PixelSelector();
-//
-//            e = new UnaryExprPostfix(firstToken,e,p);
-//            return e;
-//        } catch(PLCCompilerException ee) {}
+        Expr e = PrimaryExpr();
 
 
         return PrimaryExpr();
     }
-
-    Expr PrimaryExpr() throws LexicalException {
+    
+    //PrimaryExpr ::=STRING_LIT | NUM_LIT |  BOOLEAN_LIT | IDENT | ( Expr ) | CONST |  ExpandedPixelExpr
+    Expr PrimaryExpr() throws PLCCompilerException {
         System.out.println("PrimaryExpr()");
         //consume();
         IToken firstToken = t;
         Expr e = null;
         Expr e1 = null;
         Expr e2 = null;
+
         try {
         if (isKind(STRING_LIT)) {
             e = new StringLitExpr(firstToken);
@@ -468,23 +453,29 @@ public class ExpressionParser implements IParser {
             e = new NumLitExpr(firstToken);
             consume();
         }
+        if (isKind(BOOLEAN_LIT)) {
+            e = new IdentExpr(firstToken);
+            consume();
+        }
         if (isKind(IDENT)) {
             e = new IdentExpr(firstToken);
             consume();
-        }/* 
+        }
         if (isKind(LPAREN)) {
             consume();
             e = expr();
             match(RPAREN);
-        }*/
+        }
         if(isKind(CONST)) {
             e = new ConstExpr(firstToken);
             consume();
         }
         return e;
 
-        } catch(LexicalException ignored) {}
-        throw new LexicalException("Expected int literal or (");
+        } catch(PLCCompilerException ignored) {
+            
+        }
+        throw new PLCCompilerException("Expected literal or (");
     }
 
     //PixelSelector::=
