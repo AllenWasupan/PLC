@@ -153,11 +153,13 @@ public class ExpressionParser implements IParser {
         try {
             Expr logicalOr = LogicalOrExpr();
             return logicalOr;
-        } catch (PLCCompilerException e) {} catch (Exception e) {System.out.println("caught LogicalOrExpr");}
+        } catch (Exception e) {System.out.println("caught LogicalOrExpr");}
+        System.out.println(t.kind());
         /*System.out.println("Heyo " + t);
         if (isKind(EOF)) {
             throw new SyntaxException(null);
         }*/
+        
         throw new SyntaxException(null);
 	}
 
