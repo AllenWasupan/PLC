@@ -29,7 +29,7 @@ public class Lexer implements ILexer {
     int count = 1;
     Boolean comment = false;
 	private enum States {
-        START, HAVE_EQUALS, IN_NUMB, IN_IDENT, HAVE_ZERO,HAVE_DOT,IN_FLOAT,STRING_LIT,LEFT,RIGHT,EXC,MINUS,NUM_LIT, BOX, AND, OR, TIMES, HASH
+        START, HAVE_EQUALS, IN_NUMB, IN_IDENT, HAVE_ZERO,HAVE_DOT,IN_FLOAT,STRING_LIT,LEFT,RIGHT,EXC,MINUS,NUM_LIT, BOX, AND, OR, TIMES, HASH, COLON
     }
 
 	public Lexer(String input) {
@@ -120,9 +120,9 @@ public class Lexer implements ILexer {
         Kind k;
         source = new char[0];
         column=count;
-        length = source.length;
+
 		while(true) {
-            
+            length = source.length;
 			char ch = chars[pos];
             
             if (ch != ' ' && ch != '\n') {
@@ -141,17 +141,16 @@ public class Lexer implements ILexer {
                 
             
 				case START -> {
+                    System.out.println("\n");
                     System.out.println("Character: \"" + ch + "\"");
                     System.out.print("Source: ");
-                    System.out.println(source);
-                    System.out.println("Source Length: " + source.length);
+                    System.out.println(source);/* 
+                    System.out.println("Length: " + length);
                     System.out.println("Pos: " + pos);
                     System.out.println("StartPos: " + startPos);
-                    System.out.println("Length: " + length);
                     System.out.println("Count: " + count);
                     System.out.println("Column: " + column);
-                    System.out.println("\n");
-                    
+                    */
                     
 
                     if (pos < input.length() && (getASCII(input)[pos] == 10)) {
@@ -159,14 +158,14 @@ public class Lexer implements ILexer {
                     }
                     switch (ch) {
                         case ' ','\t','\r' -> {pos++;count++;column=count;}
-                        case '\n'-> {line++;pos++;count=1;column=count;}
-                        case '+' -> {length=1;pos++;return Kind.PLUS;}
+                        case '\n'-> {pos++;line++;count=1;column=count;}
+                        case '+' -> {pos++;length=1;return Kind.PLUS;}
                         case '#' -> {pos++;state = States.HASH;}
                         case 'A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z',
                         'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z',
                                 '$','_' -> {pos++;state = States.IN_IDENT;}
-                        case '\"' -> {state = States.STRING_LIT;pos++;length++;}
-                        case '1','2','3','4','5','6','7','8','9' -> {state = States.NUM_LIT;pos++;}
+                        case '\"' -> {pos++;state = States.STRING_LIT;length++;}
+                        case '1','2','3','4','5','6','7','8','9' -> {pos++;state = States.NUM_LIT;}
                         case '(' -> {pos++;return Kind.LPAREN;}
                         case ')' -> {pos++;return Kind.RPAREN;}
                         case '[' -> {pos++;state = States.BOX;}
@@ -175,15 +174,15 @@ public class Lexer implements ILexer {
                         case '>' -> {pos++;state = States.RIGHT;}
                         case '/' -> {pos++;return Kind.DIV;}
                         case '*' -> {pos++;state = States.TIMES;}
-                        case '-' -> {state = States.MINUS;pos++;}
-                        case '=' -> {state = States.HAVE_EQUALS; pos++;}
-                        case '0' -> {state = States.HAVE_ZERO;pos++;}
+                        case '-' -> {pos++;state = States.MINUS;}
+                        case '=' -> {pos++;state = States.HAVE_EQUALS;}
+                        case '0' -> {pos++;state = States.HAVE_ZERO;}
                         case '%' -> {pos++;return Kind.MOD;}
-                        case '&' -> {state = States.AND;pos++;}
+                        case '&' -> {pos++;state = States.AND;}
                         case '|' -> {pos++;state = States.OR;}
                         case '!' -> {pos++;return Kind.BANG;}
                         case ';' -> {pos++;return Kind.SEMI;}
-                        case ':' -> {pos++;return Kind.COLON;}
+                        case ':' -> {pos++;state = States.COLON;}
                         case ',' -> {pos++;return Kind.COMMA;}
                         case '^' -> {pos++;return Kind.RETURN;}
                         case '?' -> {pos++;return Kind.QUESTION;}
@@ -247,7 +246,6 @@ public class Lexer implements ILexer {
                             System.out.print("Source: ");
                             System.out.println(source);
                             System.out.println("Source Length: " + source.length);
-                            
                             System.out.println("Count: " + count);
                             System.out.println("col: " + column);
                             pos++;
@@ -314,7 +312,16 @@ public class Lexer implements ILexer {
                     }
                 }
                 
-				
+				case COLON -> {
+                    switch(ch){
+                                case'>'-> {
+                                pos++;
+                                length=source.length;
+                                return Kind.BLOCK_CLOSE;
+                            }
+                            default -> {return Kind.COLON;}
+                            }
+                }
 				case HAVE_DOT -> {
                     switch(ch) {
                         case '0','1','2','3','4','5','6','7','8','9' -> {

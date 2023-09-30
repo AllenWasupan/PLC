@@ -90,8 +90,9 @@ public class ExpressionParser implements IParser {
 	final ILexer lexer;
 	private IToken t;
 	
-	ExpressionParser(String input) {
+	ExpressionParser(String input) throws SyntaxException {
         lexer = ComponentFactory.makeLexer(input);
+        
     }
 	protected boolean isKind(Kind kind) {
 		return t.kind() == kind;
@@ -139,6 +140,8 @@ public class ExpressionParser implements IParser {
     //Expr::=
     //    ConditionalExpr | LogicalOrExpr
 	private Expr expr() throws PLCCompilerException {
+        System.out.println("\n");
+        System.out.println("expr()");
         try {
             Expr conditional = ConditionalExpr();
             //consume();
@@ -151,7 +154,7 @@ public class ExpressionParser implements IParser {
         } catch (PLCCompilerException e) {} catch (Exception e) {
 
         }
-        return null;
+        throw new SyntaxException(null);
 	}
 
     //ConditionalExpr ::= ? Expr -> Expr , Expr
@@ -218,7 +221,7 @@ public class ExpressionParser implements IParser {
         }
         return left;
     }
-
+/*
     ////ComparisonExpr ::= AdditiveExpr ( ('<' | '>' | '==' | '!=' | '<=' | '>=') AdditiveExpr)*
     Expr ComparisonExpr() throws Exception {
         System.out.println("ComparisonExpr()");
@@ -236,8 +239,8 @@ public class ExpressionParser implements IParser {
         }
         return left;
     }
-     
-    /*
+     */
+    
     //ComparisonExpr ::= PowExpr ( (< | > | == | <= | >=) PowExpr)*
     Expr ComparisonExpr() throws Exception {
         System.out.println("ComparisonExpr()");
@@ -254,9 +257,6 @@ public class ExpressionParser implements IParser {
             left = new BinaryExpr(firstToken, left, op, right);
         }
 
-        if (left == null) {
-            throw new Exception();
-        }
         return left;
     }
     //PowExpr ::= AdditiveExpr ** PowExpr |   AdditiveExpr
@@ -268,16 +268,22 @@ public class ExpressionParser implements IParser {
         Expr left = null;
         Expr right = null;
         IToken op = null;
-        while() {
-            left = AdditiveExpr();
-            op = t;
+        left = AdditiveExpr();
+        if(isKind(TIMES)) {
             consume();
-            right = PowExpr();
-
-            e = new BinaryExpr(firstToken, left, op, right);
+            if (isKind(TIMES)) {
+                op = t;
+                System.out.println("ComparisonExpr()");
+                consume();
+                right = PowExpr();
+                consume();
+                left = new BinaryExpr(firstToken, left, op, right);
+            }
+            
         }
-        
-    }*/
+        return left;
+        //throw new PLCCompilerException(null, null);
+    }
     //AdditiveExpr ::= MultiplicativeExpr ( ('+'|'-') MultiplicativeExpr )*
     Expr AdditiveExpr() throws Exception {
         System.out.println("AdditiveExpr()");
@@ -341,11 +347,19 @@ public class ExpressionParser implements IParser {
         System.out.println("PostfixExpr()");
         IToken firstToken = t;
         Expr prim = PrimaryExpr();
-        
+        System.out.print("Prim ");
+        System.out.println(prim);
+
         PixelSelector pix = PixelSelector();
-        ChannelSelector chan = ChannelSelector();
+        System.out.print("pix ");
+        System.out.println(pix);
+        //consume();
+        
+        
         if (pix == null) {
-            //ChannelSelector chan = ChannelSelector();
+            ChannelSelector chan = ChannelSelector();
+            System.out.print("Chan ");
+            System.out.println(chan);
             if (chan == null) {
                 return prim;
             }
@@ -353,7 +367,9 @@ public class ExpressionParser implements IParser {
             return new PostfixExpr(firstToken, prim, null, chan);
         }
         else {
-            
+            ChannelSelector chan = ChannelSelector();
+            System.out.print("Chan ");
+            System.out.println(chan);
             if (chan.firstToken != firstToken) {
                 System.out.println("no chan()");
                 return new PostfixExpr(firstToken, prim,pix,null);
@@ -374,14 +390,17 @@ public class ExpressionParser implements IParser {
         if (isKind(STRING_LIT)) {
             e = new StringLitExpr(firstToken);
             consume();
+            return e;
         }
         if (isKind(NUM_LIT)) {
             e = new NumLitExpr(firstToken);
             consume();
+            return e;
         }
         if (isKind(BOOLEAN_LIT)) {
             e = new BooleanLitExpr(firstToken);
             consume();
+            return e;
         }
         
         if (isKind(IDENT)) {
@@ -389,52 +408,79 @@ public class ExpressionParser implements IParser {
             System.out.println("e " + e);
             e = new IdentExpr(firstToken);
             consume();
+            return e;
         }
         if (isKind(LPAREN)) {
             consume();
             e = expr();
-            match(RPAREN);
-            consume();
+            match(RPAREN); 
+            //consume();
+            return e;
         }
         if(isKind(CONST)) {
             e = new ConstExpr(firstToken);
             consume();
+            return e;
         }
         
-        System.out.println("bruh()");
-        System.out.println("e " + e);
-        if (e == null) {
-            throw new SyntaxException("Expected literal or (");
-        }
-        return e;
+        Expr bigpix = ExpandedPixelExpr();
+            if (bigpix == null) {
+                throw new PLCCompilerException();
+            }
+            return bigpix;
 
         } catch(PLCCompilerException ignored) {
             throw new PLCCompilerException("Expected literal or (");
         }
         
     }
-
-    //PixelSelector::=
-    //    '[' Expr ',' Expr ']'
-    PixelSelector PixelSelector() throws PLCCompilerException { // '[' Expr ',' Expr ']'
+    //ChannelSelector ::= : red | : green | : blue 
+    ChannelSelector ChannelSelector() throws PLCCompilerException {
         System.out.println("PixelSelector()");
-        IToken firstToken = t;
-        Expr e1 = null, e2 = null;
-        if(isKind(LSQUARE)) {
-            e1 = expr();
+        
+        if(isKind(COLON)) {
             consume();
         }
         else {
             return null;
         }
 
-        if(isKind(COMMA)) {
-            e2 = expr();
+        IToken firstToken = t;
+        System.out.println(firstToken.kind());
+        IToken color = t;
+        if(isKind(RES_blue,RES_green,RES_red)) {
+            consume();
+            return new ChannelSelector(firstToken, color);
+        }
+        return null;
+        
+    }
+    
+    //PixelSelector::=
+    //    '[' Expr ',' Expr ']'
+    PixelSelector PixelSelector() throws PLCCompilerException { // '[' Expr ',' Expr ']'
+        System.out.println("PixelSelector()");
+        IToken firstToken = t;
+        Expr e1 = null, e2 = null;
+        System.out.println("firstToken " + firstToken);
+        if(isKind(LSQUARE)) {
+            consume();
+            System.out.println("pre " + e1);
+            e1 = expr();
+            System.out.println("e1 " + e1);
             consume();
         }
-
-        if(isKind(RSQUARE)) {
+        else {
+            System.out.println("bye " + firstToken);
+            return null;
+        }
+        if(isKind(COMMA)) {
+            
             consume();
+            System.out.println("Comma " + e2);
+            e2 = expr();
+            System.out.println("Comma " + e2);
+            match(RSQUARE);
         }
 
 		return new PixelSelector(firstToken, e1, e2);
@@ -447,23 +493,20 @@ public class ExpressionParser implements IParser {
         Expr e1 = null, e2 = null, e3 = null;;
 
         if(isKind(LSQUARE)) {
+            consume();
             e1 = expr();
-            consume();
-        }
-        
-        if(isKind(COMMA)) {
-            e2 = expr();
-            consume();
-        }
-        if(isKind(COMMA)) {
-            e3 = expr();
-            consume();
-        }
-        if(isKind(RSQUARE)) {
-            consume();
         }
         else {
-            throw new PLCCompilerException("ExpandedPixelExpr Error");
+            return null;
+        }
+        if(isKind(COMMA)) {
+            consume();
+            e2 = expr();
+        }
+        if(isKind(COMMA)) {
+            consume();
+            e3 = expr();
+            match(RSQUARE);
         }
 		if (e1 == null || e2 == null || e3 == null) {
 			throw new PLCCompilerException("ExpandedPixelExpr Error");
@@ -471,18 +514,6 @@ public class ExpressionParser implements IParser {
 		return new ExpandedPixelExpr(firstToken, e1, e2, e3);
     }
 
-    //ChannelSelector ::= : red | : green | : blue 
-    ChannelSelector ChannelSelector() throws PLCCompilerException {
-        System.out.println("PixelSelector()");
-        IToken firstToken = t;
-        IToken color = t;
-        if(isKind(RES_blue,RES_green,RES_red)) {
-            consume();
-            return new ChannelSelector(firstToken, color);
-        }
-        else {
-            return null;
-        }
-    }
+
 
 }
