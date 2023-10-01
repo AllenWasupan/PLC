@@ -131,15 +131,10 @@ public class Lexer implements ILexer {
                         source = Arrays.copyOf(source, source.length + 1);
                         source[source.length - 1] = ch;
                     }
-                    
                 }
-                
             }
             
-            
 			switch (state) {
-                
-            
 				case START -> {
                     System.out.println("\n");
                     System.out.println("Character: \"" + ch + "\"");
@@ -152,7 +147,6 @@ public class Lexer implements ILexer {
                     System.out.println("Column: " + column);
                     */
                     
-
                     if (pos < input.length() && (getASCII(input)[pos] == 10)) {
                         ch = '\n';
                     }
@@ -187,9 +181,9 @@ public class Lexer implements ILexer {
                         case '^' -> {pos++;return Kind.RETURN;}
                         case '?' -> {pos++;return Kind.QUESTION;}
                         case '~' -> {return Kind.EOF;}
-                        default -> {System.out.println("Throwing Lexical Exception.");throw new LexicalException("invalid lexer bug");}
+                        default -> {System.out.println("Throwing Lexical Exception.");throw new LexicalException();}
                     }
-                    }
+                }
                 case HASH -> {
                     switch(ch) {
                         case'#' ->{
@@ -204,17 +198,13 @@ public class Lexer implements ILexer {
                                     comment = false;
                                     state = States.START;
                                     source = new char[0];
-                                    
                                 }
-                                
                             }
                             else {
                                 throw new LexicalException("hash lexer bug");
                             }
                         }
-                            
-                    }
-                            
+                    }   
                 }
                 
                 case TIMES -> {
@@ -234,34 +224,21 @@ public class Lexer implements ILexer {
                         length=source.length;
                         return Kind.OR;
                         }
-                    default -> {
-                        return Kind.BITOR;
-                    }
+
+                        default -> {
+                            return Kind.BITOR;
+                        }
                     }
                 }
                 case AND -> {
                     switch (ch) {
                         case '&' -> {
-
-                            System.out.print("Source: ");
-                            System.out.println(source);
-                            System.out.println("Source Length: " + source.length);
-                            System.out.println("Count: " + count);
-                            System.out.println("col: " + column);
                             pos++;
                             length=source.length;
                             count+= length;
                             return Kind.AND;
                         }
                         default -> {
-                            
-
-                            System.out.print("Source: ");
-                            System.out.println(source);
-                            System.out.println("Source Length: " + source.length);
-                            
-                            System.out.println("Count: " + count);
-                            System.out.println("col: " + column);
                             length=source.length;
                             count+= length;
                             return Kind.BITAND;
@@ -370,21 +347,17 @@ public class Lexer implements ILexer {
                             pos++;
                             length++;
                             
-                            
                         }
                         default -> {
-                        length = source.length;
+                            length = source.length;
                             return Kind.NUM_LIT;
 
                         }
                     }
                 }
                 case STRING_LIT -> {
-                    
                     switch(ch) {
-                        
                         case '"' -> {
-                            
                             pos++;
                             length = source.length;
                             return Kind.STRING_LIT;

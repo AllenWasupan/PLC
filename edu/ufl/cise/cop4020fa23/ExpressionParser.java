@@ -49,6 +49,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import javax.security.auth.login.LoginException;
+
 import edu.ufl.cise.cop4020fa23.ast.AST;
 import edu.ufl.cise.cop4020fa23.ast.ASTVisitor;
 import edu.ufl.cise.cop4020fa23.ast.BinaryExpr;
@@ -120,7 +122,7 @@ public class ExpressionParser implements IParser {
 
 
 	@Override
-	public AST parse() throws PLCCompilerException {
+	public AST parse() throws LexicalException, SyntaxException {
 		Expr e = expr();
 		return e;
 	}
@@ -141,30 +143,26 @@ public class ExpressionParser implements IParser {
 
     //Expr::=
     //    ConditionalExpr | LogicalOrExpr
-	private Expr expr() throws PLCCompilerException {
+	private Expr expr() throws SyntaxException, LexicalException {
         System.out.println("\n");
         System.out.println("expr()");
         try {
             Expr conditional = ConditionalExpr();
             //consume();
             return conditional;
-        } catch (PLCCompilerException e) {System.out.println("caught ConditionalExpr");}
+        } catch (SyntaxException e) {System.out.println("caught ConditionalExpr");}
 
         try {
             Expr logicalOr = LogicalOrExpr();
             return logicalOr;
-        } catch (Exception e) {System.out.println("caught LogicalOrExpr");}
-        System.out.println(t.kind());
-        /*System.out.println("Heyo " + t);
-        if (isKind(EOF)) {
-            throw new SyntaxException(null);
-        }*/
-        
+        } catch (SyntaxException e) {System.out.println("caught LogicalOrExpr");}
+
+        consume();
         throw new SyntaxException(null);
 	}
 
     //ConditionalExpr ::= ? Expr -> Expr , Expr
-    Expr ConditionalExpr() throws PLCCompilerException {
+    Expr ConditionalExpr() throws SyntaxException, LexicalException {
         System.out.println("ConditionalExpr()");
         IToken firstToken = t;
         Expr expr1 = null, expr2 = null, expr3 = null;
@@ -193,7 +191,7 @@ public class ExpressionParser implements IParser {
     }
 
     //LogicalOrExpr ::= LogicalAndExpr ( '|' LogicalAndExpr)*
-    Expr LogicalOrExpr() throws Exception {
+    Expr LogicalOrExpr() throws SyntaxException, LexicalException {
         System.out.println("LogicalOrExpr()");
         IToken firstToken = t;
         Expr left = null;
@@ -211,7 +209,7 @@ public class ExpressionParser implements IParser {
 
     //LogicalAndExpr ::=
     //    ComparisonExpr ( '&'  ComparisonExpr)*
-    Expr LogicalAndExpr() throws Exception {
+    Expr LogicalAndExpr() throws SyntaxException, LexicalException {
         System.out.println("LogicalAndExpr()");
         IToken firstToken = t;
         Expr left = null;
@@ -228,7 +226,7 @@ public class ExpressionParser implements IParser {
     }
     
     //ComparisonExpr ::= PowExpr ( (< | > | == | <= | >=) PowExpr)*
-    Expr ComparisonExpr() throws Exception {
+    Expr ComparisonExpr() throws SyntaxException, LexicalException {
         System.out.println("ComparisonExpr()");
         IToken firstToken = t;
         Expr left = null;
@@ -247,7 +245,7 @@ public class ExpressionParser implements IParser {
     }
     //PowExpr ::= AdditiveExpr ** PowExpr |   AdditiveExpr
     //(AdditiveExpr ** PowExpr) |   AdditiveExpr
-    Expr PowExpr() throws Exception {
+    Expr PowExpr() throws SyntaxException, LexicalException {
         System.out.println("ComparisonExpr()");
         IToken firstToken = t;
         Expr left = null;
@@ -267,7 +265,7 @@ public class ExpressionParser implements IParser {
     }
 
     //AdditiveExpr ::= MultiplicativeExpr ( ('+'|'-') MultiplicativeExpr )*
-    Expr AdditiveExpr() throws Exception {
+    Expr AdditiveExpr() throws SyntaxException, LexicalException {
         System.out.println("AdditiveExpr()");
         IToken firstToken = t;
         Expr left = null;
@@ -286,7 +284,7 @@ public class ExpressionParser implements IParser {
     }
 
     //MultiplicativeExpr ::= UnaryExpr (('*'|'/' | '%') UnaryExpr)*
-    Expr MultiplicativeExpr() throws Exception {
+    Expr MultiplicativeExpr() throws SyntaxException, LexicalException {
         System.out.println("MultiplicativeExpr()");
         IToken firstToken = t;
         Expr left = null;
@@ -326,15 +324,14 @@ public class ExpressionParser implements IParser {
 
     //PostfixExpr::= PrimaryExpr (PixelSelector | ε ) (ChannelSelector | ε ) 
     // ε means empty, so Expr e = null;
-    Expr PostfixExpr() throws PLCCompilerException {
+    Expr PostfixExpr() throws SyntaxException,LexicalException {
         System.out.println("PostfixExpr()");
         IToken firstToken = t;
+        
         Expr prim = PrimaryExpr();
-
+        
         PixelSelector pix = PixelSelector();
-        System.out.println("bruh " + pix);
         if (pix == null) {
-            System.out.println("YOOO ");
             ChannelSelector chan = ChannelSelector();
             if (chan == null) {
                 return prim;
@@ -355,7 +352,7 @@ public class ExpressionParser implements IParser {
     }
     
     //PrimaryExpr ::=STRING_LIT | NUM_LIT |  BOOLEAN_LIT | IDENT | ( Expr ) | CONST |  ExpandedPixelExpr
-    Expr PrimaryExpr() throws PLCCompilerException {
+    Expr PrimaryExpr() throws SyntaxException, LexicalException {
         System.out.println("PrimaryExpr()");
         //consume();
         IToken firstToken = t;
@@ -402,13 +399,13 @@ public class ExpressionParser implements IParser {
         }
         
         throw new SyntaxException(null);
-        } catch(PLCCompilerException ignored) {
-            throw new PLCCompilerException("Expected literal or (");
+        } catch(SyntaxException ignored) {
+            throw new SyntaxException("Expected literal or (");
         }
         
     }
     //ChannelSelector ::= : red | : green | : blue 
-    ChannelSelector ChannelSelector() throws PLCCompilerException {
+    ChannelSelector ChannelSelector() throws SyntaxException, LexicalException {
         System.out.println("PixelSelector()");
         
         if(isKind(COLON)) {
@@ -430,7 +427,7 @@ public class ExpressionParser implements IParser {
     
     //PixelSelector::=
     //    '[' Expr ',' Expr ']'
-    PixelSelector PixelSelector() throws PLCCompilerException { // '[' Expr ',' Expr ']'
+    PixelSelector PixelSelector() throws SyntaxException, LexicalException { // '[' Expr ',' Expr ']'
         System.out.println("PixelSelector()");
         IToken firstToken = t;
         Expr e1 = null, e2 = null;
@@ -460,7 +457,7 @@ public class ExpressionParser implements IParser {
 
         //PixelSelector::=
     //    '[' Expr ',' Expr ']'
-    ExpandedPixelExpr ExpandedPixelExpr() throws PLCCompilerException {
+    ExpandedPixelExpr ExpandedPixelExpr() throws SyntaxException, LexicalException {
         System.out.println("ExpandedPixelExpr()");
         IToken firstToken = t;
         Expr e1 = null, e2 = null, e3 = null;;
