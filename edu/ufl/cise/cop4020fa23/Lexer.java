@@ -9,452 +9,404 @@
 */
 package edu.ufl.cise.cop4020fa23;
 
-import static edu.ufl.cise.cop4020fa23.Kind.EOF;
+import static edu.ufl.cise.cop4020fa23.Kind.*;
 
-import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 
 import edu.ufl.cise.cop4020fa23.exceptions.LexicalException;
 
-
+/**
+ * 
+ */
 public class Lexer implements ILexer {
 
 	String input;
-	int pos;
-	int length = 1;
-	int line = 1;
-	int column = 1;
-    int startPos;
-    char[] source;
-    int count = 1;
-    Boolean comment = false;
-	private enum States {
-        START, HAVE_EQUALS, IN_NUMB, IN_IDENT, HAVE_ZERO,HAVE_DOT,IN_FLOAT,STRING_LIT,LEFT,RIGHT,EXC,MINUS,NUM_LIT, BOX, AND, OR, TIMES, HASH, COLON
-    }
+	char[] inputChars;
+
+	int pos;  //position of next char to consider
+	char ch;  // ch = inputChars[pos]
+	int line;
+	int column;
 
 	public Lexer(String input) {
 		this.input = input;
+		pos = 0;
+		inputChars = Arrays.copyOf(input.toCharArray(), input.length() + 1);
+		ch = inputChars[pos];
+		line = 1;
+		column = 1;
 	}
- 
-	Kind isWord(char[] source2) {
-        length = source.length;
-        System.out.println("isword");
-        // forms arraylist into string
-        String str = "";
-        for (Object x : source2) {
-            str += x;
-        }
-        //length = source.length;
-        return switch (str) {
-            
-            case "TRUE", "FALSE" -> Kind.BOOLEAN_LIT;
-            case "BLACK", "BLUE", "CYAN", "DARK_GRAY", "GRAY", "GREEN", "LIGHT_GRAY", "MAGENTA", "ORANGE", "PINK", "RED", "WHITE", "YELLOW", "Z" -> Kind.CONST;
-            case "if" -> Kind.RES_if;
-            case "fi" -> Kind.RES_fi;
-            case "write" -> Kind.RES_write;
-            case "void" -> Kind.RES_void;
-            case "int" -> Kind.RES_int;
-            case "string" -> Kind.RES_string;
-            case "boolean" -> Kind.RES_boolean;
-            case "image" -> Kind.RES_image;
-            case "red" -> Kind.RES_red;
-            case "green" -> Kind.RES_green;
-            case "blue" -> Kind.RES_blue;
-            case "width" -> Kind.RES_width;
-            case "height" -> Kind.RES_height;
-            case "pixel" -> Kind.RES_pixel;
-            case "do" -> Kind.RES_do;
-            case "od" -> Kind.RES_od;
-            default -> Kind.IDENT;
-        };
-    }
-	
-	int[] getASCII(String s) {
-        int[] ascii = new int[s.length()];
-        for (int i = 0; i != s.length(); i++) {
-            ascii[i] = s.charAt(i);
-        }
-        return (ascii);
-    }
-	
-    Kind Bruh() throws LexicalException {
-        count++;
-        if (count == 1) {
-            //pos = 4;
-            length=3;
-            source = new char[3];
-            source[0] = 'a';
-            source[1] = 'b';
-            source[2] = 'c';
-            return Kind.IDENT;
-        }
-        else if (count == 2) {
-            //pos = 8;
-            length=3;
-            source = new char[3];
-            source[0] = '1';
-            source[1] = '2';
-            source[2] = '3';
-            return Kind.NUM_LIT;
-        }
-        else if (count == 3) {
-            //pos = 14;
-            length=6;
-            source = new char[6];
-            source[0] = 'a';
-            source[1] = 'b';
-            source[2] = 'c';
-            source[3] = '1';
-            source[4] = '2';
-            source[5] = '3';
-            return Kind.IDENT;
-        }
-        
-        return EOF;
-    }
-    
-	Kind L(String input) throws LexicalException {
-        
-		States state = States.START;
-	    char[] chars = (input+'~').toCharArray();
-        Kind k;
-        source = new char[0];
-        column=count;
 
-		while(true) {
-            length = source.length;
-			char ch = chars[pos];
-            
-            if (ch != ' ' && ch != '\n') {
-                if (state != States.IN_IDENT && state != States.NUM_LIT) {
-                    if (ch != '~') {
-                        source = Arrays.copyOf(source, source.length + 1);
-                        source[source.length - 1] = ch;
-                    }
-                }
-            }
-            
-			switch (state) {
-				case START -> {
-                    System.out.println("\n");
-                    System.out.println("Character: \"" + ch + "\"");
-                    System.out.print("Source: ");
-                    System.out.println(source);/* 
-                    System.out.println("Length: " + length);
-                    System.out.println("Pos: " + pos);
-                    System.out.println("StartPos: " + startPos);
-                    System.out.println("Count: " + count);
-                    System.out.println("Column: " + column);
-                    */
-                    
-                    if (pos < input.length() && (getASCII(input)[pos] == 10)) {
-                        ch = '\n';
-                    }
-                    switch (ch) {
-                        case ' ','\t','\r' -> {pos++;count++;column=count;}
-                        case '\n'-> {pos++;line++;count=1;column=count;}
-                        case '+' -> {pos++;length=1;return Kind.PLUS;}
-                        case '#' -> {pos++;state = States.HASH;}
-                        case 'A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z',
-                        'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z',
-                                '$','_' -> {pos++;state = States.IN_IDENT;}
-                        case '\"' -> {pos++;state = States.STRING_LIT;length++;}
-                        case '1','2','3','4','5','6','7','8','9' -> {pos++;state = States.NUM_LIT;}
-                        case '(' -> {pos++;return Kind.LPAREN;}
-                        case ')' -> {pos++;return Kind.RPAREN;}
-                        case '[' -> {pos++;state = States.BOX;}
-                        case ']' -> {pos++;return Kind.RSQUARE;}
-                        case '<' -> {pos++;state = States.LEFT;}
-                        case '>' -> {pos++;state = States.RIGHT;}
-                        case '/' -> {pos++;return Kind.DIV;}
-                        case '*' -> {pos++;state = States.TIMES;}
-                        case '-' -> {pos++;state = States.MINUS;}
-                        case '=' -> {pos++;state = States.HAVE_EQUALS;}
-                        case '0' -> {pos++;state = States.HAVE_ZERO;}
-                        case '%' -> {pos++;return Kind.MOD;}
-                        case '&' -> {pos++;state = States.AND;}
-                        case '|' -> {pos++;state = States.OR;}
-                        case '!' -> {pos++;return Kind.BANG;}
-                        case ';' -> {pos++;return Kind.SEMI;}
-                        case ':' -> {pos++;state = States.COLON;}
-                        case ',' -> {pos++;return Kind.COMMA;}
-                        case '^' -> {pos++;return Kind.RETURN;}
-                        case '?' -> {pos++;return Kind.QUESTION;}
-                        case '~' -> {return Kind.EOF;}
-                        default -> {System.out.println("Throwing Lexical Exception.");throw new LexicalException();}
-                    }
-                }
-                case HASH -> {
-                    switch(ch) {
-                        case'#' ->{
-                            comment = true;
-                            pos++;
-                        }
-                        default -> {
-                            if (comment) {
-                                pos++;
-                                if(ch == '\n') {
-                                    System.out.println(source);
-                                    comment = false;
-                                    state = States.START;
-                                    source = new char[0];
-                                }
-                            }
-                            else {
-                                throw new LexicalException("hash lexer bug");
-                            }
-                        }
-                    }   
-                }
-                
-                case TIMES -> {
-                    switch(ch){
-                                case'*'-> {
-                                pos++;
-                                length=source.length;
-                                return Kind.EXP;
-                            }
-                            default -> {return Kind.TIMES;}
-                            }
-                }
-                case OR -> {
-                    switch(ch) {
-                        case '|' -> {
-                        pos++;
-                        length=source.length;
-                        return Kind.OR;
-                        }
-
-                        default -> {
-                            return Kind.BITOR;
-                        }
-                    }
-                }
-                case AND -> {
-                    switch (ch) {
-                        case '&' -> {
-                            pos++;
-                            length=source.length;
-                            count+= length;
-                            return Kind.AND;
-                        }
-                        default -> {
-                            length=source.length;
-                            count+= length;
-                            return Kind.BITAND;
-                        }
-                    }
-                }
-                case BOX -> {
-                    switch (ch) {
-                        case ']' -> {
-                            pos++;
-                            return Kind.BOX;
-                        }
-                        default -> {
-                            return Kind.LSQUARE;
-                        }
-                    }
-                }
-
-				case IN_IDENT-> {
-                    
-                    switch(ch) {
-                        case 'A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P','Q','R','S','T','U','V','W','X','Y','Z',
-                                'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z',
-                                '$','_','0','1','2','3','4','5','6','7','8','9' -> {
-                            source = Arrays.copyOf(source, source.length + 1);
-                            source[source.length - 1] = ch;
-                            pos++;
-                            length = source.length;
-                        }
-                        
-                        default -> {
-                            //source = Arrays.copyOf(source, source.length - 1);
-                            length = source.length;
-
-                            return isWord(source);
-                        }
-                    }
-                }
-				case HAVE_ZERO -> {
-                    switch(ch) {
-                        case '.' -> {
-                            state = States.HAVE_DOT;
-                            pos++;
-                        }
-                        default -> {
-                            return Kind.NUM_LIT;
-                        }
-                    }
-                }
-                
-				case COLON -> {
-                    switch(ch){
-                                case'>'-> {
-                                pos++;
-                                length=source.length;
-                                return Kind.BLOCK_CLOSE;
-                            }
-                            default -> {return Kind.COLON;}
-                            }
-                }
-				case HAVE_DOT -> {
-                    switch(ch) {
-                        case '0','1','2','3','4','5','6','7','8','9' -> {
-                            state = States.IN_FLOAT;
-                            pos++;
-                        }
-                        default -> throw new LexicalException("lexer bug");
-
-                    }
-                }
-                case HAVE_EQUALS -> {
-                    switch (ch) {
-                        case '=' -> {
-                            pos++;
-                            length = source.length;
-                            return Kind.EQ;
-                        }
-                        default -> {return Kind.ASSIGN;}
-                        
-                    }
-                }
-
-                case IN_NUMB -> {
-                    switch(ch) {
-                        case '0','1','2','3','4','5','6','7','8','9' -> {
-                            pos++;
-                        }
-                        default -> {
-                            length = source.length;
-                            return Kind.NUM_LIT;
-                        }
-                    }
-                }
-
-				
-                case NUM_LIT -> {
-                    switch(ch) {
-                        case '0','1','2','3','4','5','6','7','8','9' -> {
-                            source = Arrays.copyOf(source, source.length + 1);
-                            source[source.length - 1] = ch;
-                            column=count-source.length;
-                            if (source.length > 11) {
-                                throw new LexicalException("num_lit bug");
-                            }
-                            
-                            pos++;
-                            length++;
-                            
-                        }
-                        default -> {
-                            length = source.length;
-                            return Kind.NUM_LIT;
-
-                        }
-                    }
-                }
-                case STRING_LIT -> {
-                    switch(ch) {
-                        case '"' -> {
-                            pos++;
-                            length = source.length;
-                            return Kind.STRING_LIT;
-                        }
-                        case '\n' -> {
-                            throw new LexicalException("string_lit bug");
-                        }
-                        case '␡' -> {
-                            throw new LexicalException("string_lit bug");
-                        }
-                        case '~' -> {
-                            throw new LexicalException("string_lit bug");
-                        }
-                        default -> {
-                            //source = Arrays.copyOf(source, source.length + 1);
-                            //source[source.length - 1] = ch;
-                            pos++;
-                        }
-                    }
-                }
-                case MINUS -> {
-                    switch (ch) {
-                        case '>' -> {
-                            pos++;
-                            return Kind.RARROW;
-                        }
-                        default -> {
-                            //pos++;
-                            return Kind.MINUS;
-                        }
-                    }
-                }
-                case LEFT -> {
-                    switch (ch) {
-                        case '=' -> {
-                            pos++;
-                            length++;
-                            return Kind.LE;
-                        }/*
-                        case '-' -> {
-                            pos++;
-                            length++;
-                            return Kind.LEFTARROW;
-                        }*/
-                        case ':' -> {
-                            pos++;
-                            length++;
-                            return Kind.BLOCK_OPEN;
-                        }
-                        default -> {
-                            return Kind.LT;
-                        }
-                    }
-
-                }
-                case RIGHT -> {
-                    switch (ch) {
-                        case '=' -> {
-                            pos++;
-                            length++;
-                            return Kind.GE;
-                        }
-                        default -> {
-                            //pos++;
-                            return Kind.GT;
-                        }
-                    }
-                }
-                
-                
-                // if character is an identifier
-                
-                case IN_FLOAT -> {
-					switch(ch) {
-                        case '0','1','2','3','4','5','6','7','8','9' -> {
-                            source = Arrays.copyOf(source, source.length + 1);
-                            source[source.length - 1] = ch;
-                            pos++;
-                        }
-                        default -> {
-                            return Kind.NUM_LIT;
-                        }
-                    }
-                }
-				
-				//default -> {return Kind.EOF;}
-				default -> throw new LexicalException("invalid lexer bug");
-			}
-            
-        }
-		
-	}
 	@Override
 	public IToken next() throws LexicalException {
-
-		return new Token(L(input), startPos, length, source, new SourceLocation(line, column));
-        //return new Token(Bruh(), startPos, length, source, new SourceLocation(line, column));
+		return scanToken();
 	}
-}
 
+//	public ILexer backup() {
+//		pos--;
+//		ch = inputChars[pos];
+//		return this;
+//	}
+
+	private enum State {
+		START, IN_IDENT, IN_NUM_LIT, IN_STRING, HAVE_AND, HAVE_OR, HAVE_LT, HAVE_GT, HAVE_HASH, HAVE_TIMES, HAVE_MINUS,
+		HAVE_COLON, HAVE_EQ, HAVE_LSQUARE, IN_COMMENT;
+	}
+
+	void nextChar() {
+		++pos;
+		++column;
+		ch = inputChars[pos];
+		if (ch == '\n') {
+			line++;
+			column = 0;
+		}
+	}
+/*
+ * 	RES_image, 
+	RES_pixel,
+	RES_int,
+	RES_string,
+	RES_void,
+	RES_boolean,
+	RES_nil,
+	RES_write,
+	RES_height,
+	RES_width,
+	RES_if,
+	RES_fi,
+	RES_do,
+	RES_od,
+	RES_red,
+	RES_green,
+	RES_blue,
+	CONST, // Z | BLACK | BLUE | CYAN | DARK_GRAY | GRAY | GREEN | LIGHT_GRAY | MAGENTA | ORANGE | PINK | RED | WHITE | YELLOW
+	BOOLEAN_LIT,// TRUE, FALSE
+ */
+	private static HashMap<String, Kind> reserved;
+	static {
+		reserved = new HashMap<>();
+		reserved.put("image", RES_image);
+		reserved.put("pixel", RES_pixel);
+		reserved.put("int", RES_int);
+		reserved.put("string", RES_string);
+		reserved.put("void", RES_void);
+		reserved.put("boolean", RES_boolean);
+		reserved.put("nil", RES_nil);
+		reserved.put("write", RES_write);
+		reserved.put("height", RES_height);
+		reserved.put("width", RES_width);
+		reserved.put("if", RES_if);
+		reserved.put("fi", RES_fi);
+		reserved.put("do", RES_do);
+		reserved.put("od", RES_od);
+		reserved.put("red", RES_red);
+		reserved.put("green", RES_green);
+		reserved.put("blue", RES_blue);
+		reserved.put("Z", CONST);
+		reserved.put("BLACK", CONST);
+		reserved.put("BLUE", CONST);
+		reserved.put("CYAN", CONST);
+		reserved.put("DARK_GRAY", CONST);
+		reserved.put("GRAY", CONST);
+		reserved.put("GREEN", CONST);
+		reserved.put("LIGHT_GRAY", CONST);
+		reserved.put("MAGENTA", CONST);
+		reserved.put("ORANGE", CONST);
+		reserved.put("PINK", CONST);
+		reserved.put("RED", CONST);
+		reserved.put("WHITE", CONST);
+		reserved.put("YELLOW", CONST);
+		reserved.put("TRUE", BOOLEAN_LIT);
+		reserved.put("FALSE", BOOLEAN_LIT);
+	}
+	private static HashMap<Character, Kind> singleCharTokenKinds;
+	static {
+		singleCharTokenKinds = new HashMap<>();
+		singleCharTokenKinds.put('0', NUM_LIT);
+//		singleCharTokenKinds.put('.', DOT);
+		singleCharTokenKinds.put(';', SEMI);
+		singleCharTokenKinds.put('+', PLUS);
+		singleCharTokenKinds.put('/', DIV);
+		singleCharTokenKinds.put('%', MOD);
+//		singleCharTokenKinds.put('{', LCURLY);
+//		singleCharTokenKinds.put('}', RCURLY);
+		singleCharTokenKinds.put('[', LSQUARE);
+		singleCharTokenKinds.put(']', RSQUARE);
+		singleCharTokenKinds.put('(', LPAREN);
+		singleCharTokenKinds.put(')', RPAREN);
+		singleCharTokenKinds.put(',', COMMA);
+		singleCharTokenKinds.put('?', QUESTION);
+		singleCharTokenKinds.put('!', BANG);
+		singleCharTokenKinds.put(';', SEMI);
+		singleCharTokenKinds.put('^', RETURN);
+	}
+
+	private boolean isPrintable(char ch2) {
+		return 32 <= ch2 && ch2 <= 126;
+	}
+
+	boolean isIdentifierStart(char ch2) {
+		return ('A' <= ch && ch <= 'Z') || ('a' <= ch && ch <= 'z') || (ch == '_');
+	}
+
+	boolean isIdentifierPart(char ch2) {
+		return isIdentifierStart(ch2) || ('0' <= ch2 && ch2 <= '9');
+	}
+
+	private Token scanToken() throws LexicalException {
+		State state = State.START;
+		int tokenStart = -1;
+		SourceLocation loc = null;
+		while (true) {
+			switch (state) {
+			case START -> {// skip over white space, read first char and change state or return accordingly
+				tokenStart = pos;
+				loc = new SourceLocation(line, column);
+				switch (ch) {
+				case 0 -> {
+					// do not try to read next character, there is none.
+					return new Token(EOF, tokenStart, 0, inputChars, loc);
+				}
+				case ' ', '\n', '\r' -> { // white space, stay in start state
+					nextChar();
+				}
+//				case '0', '.', '+', '/', '%', '{', '}', ']', '(', ')', ',', '?', '!', ';', '^' -> { // single character
+																									// tokens
+				case '0',  '+', '/', '%',  ']', '(', ')', ',', '?', '!', ';', '^' -> { // single character
+				// tokens
+					Kind kind = singleCharTokenKinds.get(ch);
+					nextChar();
+					return new Token(kind, tokenStart, pos - tokenStart, inputChars, loc);
+				}
+				case '&' -> {
+					nextChar();
+					state = State.HAVE_AND;
+				}
+				case '|' -> {
+					nextChar();
+					state = State.HAVE_OR;
+				}
+				case '<' -> {
+					nextChar();
+					state = State.HAVE_LT;
+				}
+				case '>' -> {
+					nextChar();
+					state = State.HAVE_GT;
+				}
+				case '*' -> {
+					nextChar();
+					state = State.HAVE_TIMES;
+				}
+				case '-' -> {
+					nextChar();
+					state = State.HAVE_MINUS;
+				}
+				case ':' -> {
+					nextChar();
+					state = State.HAVE_COLON;
+				}
+				case '=' -> {
+					nextChar();
+					state = State.HAVE_EQ;
+				}
+				case '\"' -> {
+					nextChar();
+					state = State.IN_STRING;
+				}
+				case '[' -> {
+					nextChar();
+					state = State.HAVE_LSQUARE;
+				}
+				case '1', '2', '3', '4', '5', '6', '7', '8', '9' -> {
+					nextChar();
+					state = State.IN_NUM_LIT;
+				}
+				case '#' -> {
+					nextChar();
+					state = State.HAVE_HASH;
+				}
+				default -> {
+					if (isIdentifierStart(ch)) {
+						nextChar();
+						state = State.IN_IDENT;
+					} else {
+						throw new LexicalException(loc, " illegal character " + ch + " with ascii value " + (int) ch);
+					}
+				}
+				}
+			}
+
+			case HAVE_AND -> {
+				switch (ch) {
+				case '&' -> {
+					nextChar();
+					return new Token(AND, tokenStart, pos - tokenStart, inputChars, loc);
+				}
+				default -> {
+					return new Token(BITAND, tokenStart, pos - tokenStart, inputChars, loc);
+				}
+				}
+			}
+			case HAVE_OR -> {
+				switch (ch) {
+				case '|' -> {
+					nextChar();
+					return new Token(OR, tokenStart, pos - tokenStart, inputChars, loc);
+				}
+				default -> {
+					return new Token(BITOR, tokenStart, pos - tokenStart, inputChars, loc);
+				}
+				}
+			}
+			case HAVE_LT -> {
+				switch (ch) {
+				case ':' -> {
+					nextChar();
+					return new Token(BLOCK_OPEN, tokenStart, pos - tokenStart, inputChars, loc);
+				}
+				case '=' -> {
+					nextChar();
+					return new Token(LE, tokenStart, pos - tokenStart, inputChars, loc);
+				}
+				default -> {
+					return new Token(LT, tokenStart, pos - tokenStart, inputChars, loc);
+				}
+				}
+			}
+			case HAVE_GT -> {
+				switch (ch) {
+				case '=' -> {
+					nextChar();
+					return new Token(GE, tokenStart, pos - tokenStart, inputChars, loc);
+				}
+				default -> {
+					return new Token(GT, tokenStart, pos - tokenStart, inputChars, loc);
+				}
+				}
+			}
+			case HAVE_TIMES -> {
+				switch (ch) {
+				case '*' -> {
+					nextChar();
+					return new Token(EXP, tokenStart, pos - tokenStart, inputChars, loc);
+				}
+				default -> {
+					return new Token(TIMES, tokenStart, pos - tokenStart, inputChars, loc);
+				}
+				}
+			}
+			case HAVE_MINUS -> {
+				switch (ch) {
+				case '>' -> {
+					nextChar();
+					return new Token(RARROW, tokenStart, pos - tokenStart, inputChars, loc);
+				}
+				default -> {
+					return new Token(MINUS, tokenStart, pos - tokenStart, inputChars, loc);
+				}
+				}
+			}
+			case HAVE_COLON -> {
+				switch (ch) {
+				case '>' -> {
+					nextChar();
+					return new Token(BLOCK_CLOSE, tokenStart, pos - tokenStart, inputChars, loc);
+				}
+				default -> {
+					return new Token(COLON, tokenStart, pos - tokenStart, inputChars, loc);
+				}
+				}
+			}
+			case HAVE_EQ -> {
+				switch (ch) {
+				case '=' -> {
+					nextChar();
+					return new Token(EQ, tokenStart, pos - tokenStart, inputChars, loc);
+				}
+				default -> {
+					return new Token(ASSIGN, tokenStart, pos - tokenStart, inputChars, loc);
+				}
+				}
+			}
+			case HAVE_LSQUARE -> {
+				switch (ch) {
+				case ']' -> {
+					nextChar();
+					return new Token(BOX, tokenStart, pos - tokenStart, inputChars, loc);
+				}
+				default -> {
+					return new Token(LSQUARE, tokenStart, pos - tokenStart, inputChars, loc);
+				}
+				}
+			}
+			case IN_STRING -> {
+				switch (ch) {
+				case '\"' -> {
+					nextChar();
+					return new Token(STRING_LIT, tokenStart, pos - tokenStart, inputChars, loc);
+				}
+				default -> {
+					if (!isPrintable(ch))
+						throw new LexicalException(loc, "illegal character in String");
+					nextChar();
+				}
+				}
+			}
+			case IN_NUM_LIT -> {
+				switch (ch) {
+				case '0', '1', '2', '3', '4', '5', '6', '7', '8', '9' -> {
+					nextChar();
+				}
+				default -> {
+					Token t = new Token(NUM_LIT, tokenStart, pos - tokenStart, inputChars, loc);
+					try {
+						Integer.parseInt(t.text());
+						return t;
+					} catch (NumberFormatException e) {
+
+						throw new LexicalException(loc, "numeric literal out of range [" + t.text() + "]");
+					}
+				}
+				}
+			}
+			case HAVE_HASH -> {
+				switch (ch) {
+				case '#' -> {
+					nextChar();
+					state = State.IN_COMMENT;
+				}
+				default -> {
+					throw new LexicalException(loc, "single # not allowed");
+				}
+				}
+			}
+			case IN_COMMENT -> {
+				if (isPrintable(ch)) {
+					nextChar();
+				} else {
+					// don't create a token here, just return to the start state
+					// if this character is not printable, it is either '\r' or '\n' or an illegal
+					// character.
+					// if it is an illegal character, this will be discovered in the start state.
+					state = State.START;
+				}
+			}
+			case IN_IDENT -> {
+				if (isIdentifierPart(ch)) {
+					nextChar();
+				} else {
+					String identText = input.substring(tokenStart, pos); // get text of identifier
+					Kind reservedKind = reserved.get(identText);
+					return new Token(reservedKind == null ? IDENT : reservedKind, tokenStart, pos - tokenStart,
+							inputChars, loc);
+
+				}
+			}
+			}
+		}
+	}
+
+}
