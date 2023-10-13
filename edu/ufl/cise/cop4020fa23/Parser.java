@@ -10,6 +10,7 @@
 package edu.ufl.cise.cop4020fa23;
 
 import edu.ufl.cise.cop4020fa23.ast.*;
+import edu.ufl.cise.cop4020fa23.ast.Block.BlockElem;
 import edu.ufl.cise.cop4020fa23.exceptions.LexicalException;
 import edu.ufl.cise.cop4020fa23.exceptions.PLCCompilerException;
 import edu.ufl.cise.cop4020fa23.exceptions.SyntaxException;
@@ -19,6 +20,8 @@ import static edu.ufl.cise.cop4020fa23.Kind.*;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+
+import javax.swing.plaf.nimbus.State;
 
 
 public class Parser implements IParser {
@@ -57,8 +60,11 @@ public class Parser implements IParser {
 
 	@Override
 	public AST parse() throws LexicalException, SyntaxException {
-		Expr e = expr();
-		return e;
+        try {
+            Expr e = expr();
+            return e;
+        } catch(SyntaxException error) {Program p = Program(); return p;}
+		
 	}
     
     void match(Kind kind) throws LexicalException {
@@ -76,99 +82,173 @@ public class Parser implements IParser {
     }
 
 	//Program::=  Type IDENT ( ParamList )   Block                         
-
-	//Block ::=  <:  (Declaration ; | Statement ;)*  :> 
-
-	//ParamList ::= ε |  NameDef  ( , NameDef ) * 
-
-	//NameDef ::= Type IDENT | Type Dimension  IDENT                    
-	NameDef NameDef() throws SyntaxException {
-        System.out.println("NameDef()");
-        NameDef namedef = null;
+    Program Program() throws LexicalException, SyntaxException {
+        System.out.println("Program()");
         IToken firstToken = t;
         IToken type = null;
         IToken name = null;
-        Dimension dim = null;
-        //System.out.println(t.getText() + " && " + t.getKind());
-        if(isKind(TYPE)) {
-            // idk if i need to do consume()
-            //System.out.println("189" + t.getKind());
-            type = t;
+        List<NameDef> params = null;
+        Block b = null;
+        
+        type = Type();
+
+        if (isKind(IDENT)) {
+            name = t;
             consume();
-            //System.out.println("192" + t.getKind());
-            // if there is an IDENT
-            if(t.getKind() == IDENT) {
-                name = t; // then gets the "name"?
-                //System.out.println("196 if(t.getKind() == IDENT)");
-                namedef = new NameDef(firstToken,type,dim, name);
-            }
-            // else if dimension exists
-            else if ((dim = Dimension()) != null) {
-                //dim = Dimension();
-                //System.out.println("202 else if ((dim = Dimension()) != null)");
-                consume();
-                type = t;
-                namedef = new NameDef(firstToken,type,dim,type);
-            }
         }
-        //System.out.println("hi");
-        return namedef;
+
+        match(LPAREN);
+
+        params = ParamList();
+
+        match(RPAREN);
+        System.out.println("P block");
+        b = Block();
+        consume();
+        return new Program(firstToken, type, name, params, b);
+        
+    }
+	//Block ::=  <:  (Declaration ; | Statement ;)*  :> 
+    Block Block() throws SyntaxException, LexicalException {
+        System.out.println("Block()");
+        IToken firstToken = t;
+        Declaration d = null;
+        Statement s = null;
+        List<BlockElem> lis = new ArrayList<BlockElem>();
+        BlockElem next = null;
+        while (isKind(SEMI,BLOCK_OPEN)) {
+            consume();
+            d = Declaration();
+            System.out.println(d);
+            if (d.getNameDef() == null) {
+                s = Statement();
+                System.out.println(s);
+                if (s == null) {
+                    
+                    break;
+                }
+                else {
+                    next = s;
+                }
+            }
+            else {
+                next = d;
+            }        
+            lis.add(next);
+            System.out.println("Adding Block " + next);
+        }
+
+        match(BLOCK_CLOSE);
+        System.out.println(lis);
+        return new Block(firstToken, lis);
+    
+    }
+	//ParamList ::= ε |  NameDef  ( , NameDef ) * 
+    List<NameDef> ParamList() throws LexicalException, SyntaxException {
+        System.out.println("ParamList()");
+        IToken firstToken = t;
+        NameDef next = null;
+        IToken op = null;
+        List<NameDef> l = new ArrayList<NameDef>();
+        int count = 0;
+        boolean start = false;
+
+        while (isKind(COMMA) || start == false) {
+            start = true;
+            if (isKind(COMMA)) {
+                consume();
+            }
+            next = NameDef();
+            if (next == null) {
+                break;
+            }
+            l.add(next);
+            System.out.println("Adding Param " + next);
+            System.out.println(t);
+        }
+        System.out.println();
+        l.forEach(System.out::println);;
+        return l;
+    }
+
+	//NameDef ::= Type IDENT | Type Dimension  IDENT                    
+	NameDef NameDef() throws SyntaxException, LexicalException {
+        System.out.println("NameDef()");
+        IToken firstToken = t;
+        IToken type = null;
+        IToken token = null;
+        Dimension dim = null;
+        System.out.println(t);
+        try {
+            if (isKind(RES_image,RES_pixel,RES_int,RES_string,RES_void,RES_boolean)) {
+                System.out.println("NameDefType");
+                System.out.println(t);
+                type = Type();
+                System.out.println(t);
+                if (isKind(IDENT)) {
+                    token = t;
+                    consume();
+                }
+                else {
+                    dim = Dimension();
+                    token = t;
+                    match(IDENT);
+                }
+                return new NameDef(firstToken,type,dim,token);
+            }
+            
+        }catch(SyntaxException ignored) {throw new SyntaxException(null);}catch(LexicalException ignored) {throw new SyntaxException(null);}
+        return null;
+        
     }
 
 	//Type ::= image | pixel | int | string | void | boolean 
-	Expr Type() throws LexicalException, SyntaxException {
+	IToken Type() throws LexicalException, SyntaxException {
 		System.out.println("Type()");
         //consume();
         IToken firstToken = t;
-        Expr e = null;
-        System.out.println("kind " + t.kind());
         try {
-        if (isKind(image)) {
-            e = new StringLitExpr(firstToken);
+        if (isKind(RES_image)) {
             consume();
-            return e;
+            return firstToken;
         }
-        if (isKind(pixel)) {
-            e = new NumLitExpr(firstToken);
+        if (isKind(RES_pixel)) {
             consume();
-            return e;
+            return firstToken;
         }
-        if (isKind(int)) {
-            e = new BooleanLitExpr(firstToken);
+        if (isKind(RES_int)) {
             consume();
-            return e;
+            return firstToken;
         }
-        
-        if (isKind(string)) {
-            e = new IdentExpr(firstToken);
+        if (isKind(RES_string)) {
             consume();
-            return e;
+            return firstToken;
         }
-        if (isKind(void)) {
+        if (isKind(RES_void)) {
             consume();
-            e = expr();
-            match(RPAREN); 
-            //consume();
-            return e;
+            return firstToken;
         }
-        if(isKind(boolean)) {
-            e = new ConstExpr(firstToken);
+        if(isKind(RES_boolean)) {
             consume();
-            return e;
+            return firstToken;
         }
-        
-        Expr bigpix = ExpandedPixelExpr();
-        if (bigpix != null) {
-            return bigpix;
-        }
-        
+        System.out.println(t);
+        System.out.println("bye");
         throw new SyntaxException(null);
-        } catch(SyntaxException ignored) {
-            throw new SyntaxException("Expected literal or (");
-        }
+        } catch(SyntaxException ignored) {throw new SyntaxException("Type error");}
 	}
 	//Declaration::= NameDef |  NameDef = Expr
-
+    Declaration Declaration() throws SyntaxException, LexicalException {
+        IToken firstToken = t;
+        NameDef n = null;
+        Expr e = null;
+        n = NameDef();
+        if (isKind(ASSIGN)) {
+            e = expr();
+        }
+        return new Declaration(firstToken, n, e);
+        
+    }
     //Expr::= ConditionalExpr | LogicalOrExpr
 	private Expr expr() throws SyntaxException, LexicalException {
         System.out.println("\n");
@@ -184,7 +264,7 @@ public class Parser implements IParser {
             return logicalOr;
         } catch (SyntaxException e) {System.out.println("caught LogicalOrExpr");}
 
-        consume();
+        System.out.println("Thrown from expr");
         throw new SyntaxException(null);
 	}
 
@@ -536,7 +616,7 @@ public class Parser implements IParser {
 
 	//Dimension  ::=  [ Expr , Expr ]                     
 	Dimension Dimension() throws LexicalException, SyntaxException {
-		System.out.println("PixelSelector()");
+		System.out.println("Dimension()");
         IToken firstToken = t;
         Expr e1 = null, e2 = null;
 
@@ -544,6 +624,7 @@ public class Parser implements IParser {
             System.out.println("lsquare passed");
             consume();
             e1 = expr();
+            System.out.println("uh");
         }
         else {
             return null;
@@ -563,20 +644,125 @@ public class Parser implements IParser {
 	}
 
 	//LValue ::=  IDENT (PixelSelector | ε ) (ChannelSelector | ε ) 
-
+    LValue LValue() throws SyntaxException, LexicalException {
+        System.out.println("LValue()");
+        IToken firstToken = t;
+        System.out.println("first token " + firstToken);
+        match(IDENT);
+        System.out.println(t);
+        PixelSelector pix = PixelSelector();
+        if (pix == null) {
+            ChannelSelector chan = ChannelSelector();
+            if (chan == null) {
+                System.out.println("LValue all null");
+                return new LValue(firstToken, firstToken, null, null);
+            }
+            System.out.println("no pix()");
+            return new LValue(firstToken, firstToken, null, chan);
+        }
+        else {
+            ChannelSelector chan = ChannelSelector();
+            if (chan == null) {
+                System.out.println("no chan()");
+                return new LValue(firstToken, firstToken,pix,null);
+            }
+            System.out.println("nice()");
+            
+            return new LValue(firstToken, firstToken,pix,chan);
+        }
+        
+    }
 	
 	//Statement::= 
-	/* 
+/* 
 	LValue = Expr | 
-				write Expr | 
-				do GuardedBlock [] GuardedBlock* od  | 
-				if   GuardedBlock [] GuardedBlock*  if    | 
+    write Expr | 
+    do GuardedBlock [] GuardedBlock* od  | 
+    if   GuardedBlock [] GuardedBlock*  if    | 
 	^ Expr  | 
-				BlockStatement  | */
+    BlockStatement  | 
+*/
+
+    Statement Statement() throws LexicalException, SyntaxException {
+        System.out.println("Statement()");
+        IToken firstToken = t;
+        Expr e = null;
+        LValue l = null;
+        Block bl = null;
+        GuardedBlock gbl = null;
+        List<GuardedBlock> listbl = null;
+
+        try {
+            System.out.println(t);
+            l = LValue();
+            System.out.println(t);
+            match(ASSIGN);
+            System.out.println(t);
+            e = expr();
+            
+            return new AssignmentStatement(firstToken,l,e);
+        } catch (LexicalException ee) {System.out.println("caught AssignmentStatement");} catch(SyntaxException aa) {System.out.println("caught AssignmentStatement");}
+
+        try {
+            match(RES_write);
+            e = expr();
+            return new WriteStatement(firstToken,e);
+        } catch (LexicalException ee) {System.out.println("caught WriteStatement");} catch(SyntaxException aa) {System.out.println("caught WriteStatement");}
+
+        try {
+            match(RES_do);
+            gbl = GuardedBlock();
+            match(BOX);
+            gbl = GuardedBlock();
+            match(RES_od);
+            return new DoStatement(firstToken,listbl); 
+        } catch (LexicalException ee) {System.out.println("caught DoStatement");} catch(SyntaxException aa) {System.out.println("caught DoStatement");}
+
+        try { 
+            match(RES_if);
+            gbl = GuardedBlock();
+            match(BOX);
+            gbl = GuardedBlock();
+            match(RES_od);
+            match(RES_fi);
+            return new IfStatement(firstToken,listbl);
+        } catch (LexicalException ee) {System.out.println("caught ReturnStatement");} catch(SyntaxException aa) {System.out.println("caught ReturnStatement");}
+
+        try {
+            match(RETURN);
+            e = expr();
+            return new ReturnStatement(firstToken,e);
+        } catch (LexicalException ee) {System.out.println("caught ReturnStatement");} catch(SyntaxException aa) {System.out.println("caught ReturnStatement");}
+
+        try {
+            match(BLOCK_OPEN);
+            bl = BlockStatement();
+            return new StatementBlock(firstToken,bl);
+        } catch (LexicalException ee) {System.out.println("caught BlockStatement");}catch(SyntaxException aa) {System.out.println("caught BlockStatement");}
+
+        return null;
+
+    }
 
 	//GuardedBlock := Expr -> Block 
+    GuardedBlock GuardedBlock() throws LexicalException, SyntaxException {
+        System.out.println("GuardedBlock()");
+        IToken firstToken = t;
+        Expr e = null;
+        Block bl = null;
 
+        e = expr();
+        consume();
+        match(RARROW);
+        bl = Block();
+        consume();
+
+        return new GuardedBlock(firstToken, e, bl);
+    }
 	//BlockStatement ::= Block
-
+    Block BlockStatement() throws SyntaxException, LexicalException {
+        System.out.println("BlockStatement()");
+        return Block();
+    }
 }
 
