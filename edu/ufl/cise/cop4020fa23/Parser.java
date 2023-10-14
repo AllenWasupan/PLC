@@ -87,7 +87,7 @@ public class Parser implements IParser {
         IToken firstToken = t;
         IToken type = null;
         IToken name = null;
-        List<NameDef> params = null;
+        List<NameDef> params = new ArrayList<NameDef>();
         Block b = null;
         
         type = Type();
@@ -104,8 +104,13 @@ public class Parser implements IParser {
         match(RPAREN);
         System.out.println("P block");
         b = Block();
-        consume();
-        return new Program(firstToken, type, name, params, b);
+        if (isKind(EOF)) {
+            return new Program(firstToken, type, name, params, b);
+        }
+        else {
+            throw new SyntaxException("Not EOF");
+        }
+        
         
     }
 	//Block ::=  <:  (Declaration ; | Statement ;)*  :> 
@@ -133,13 +138,18 @@ public class Parser implements IParser {
             }
             else {
                 next = d;
-            }        
+            }
+            if (isKind(SEMI)) {
+
+            }
+            else {
+                throw new SyntaxException("Thrown from Block");
+            }
             lis.add(next);
             System.out.println("Adding Block " + next);
         }
-
         match(BLOCK_CLOSE);
-        System.out.println(lis);
+        System.out.println("Block list " + lis);
         return new Block(firstToken, lis);
     
     }
@@ -150,7 +160,6 @@ public class Parser implements IParser {
         NameDef next = null;
         IToken op = null;
         List<NameDef> l = new ArrayList<NameDef>();
-        int count = 0;
         boolean start = false;
 
         while (isKind(COMMA) || start == false) {
@@ -239,11 +248,15 @@ public class Parser implements IParser {
 	}
 	//Declaration::= NameDef |  NameDef = Expr
     Declaration Declaration() throws SyntaxException, LexicalException {
+        System.out.println("Declaration()");
         IToken firstToken = t;
         NameDef n = null;
         Expr e = null;
+
         n = NameDef();
         if (isKind(ASSIGN)) {
+            consume();
+            System.out.println(t);
             e = expr();
         }
         return new Declaration(firstToken, n, e);
@@ -690,7 +703,7 @@ public class Parser implements IParser {
         LValue l = null;
         Block bl = null;
         GuardedBlock gbl = null;
-        List<GuardedBlock> listbl = null;
+        List<GuardedBlock> listbl = new ArrayList<GuardedBlock>();
 
         try {
             System.out.println(t);
@@ -712,8 +725,12 @@ public class Parser implements IParser {
         try {
             match(RES_do);
             gbl = GuardedBlock();
+            listbl.add(gbl);
+
             match(BOX);
             gbl = GuardedBlock();
+            listbl.add(gbl);
+
             match(RES_od);
             return new DoStatement(firstToken,listbl); 
         } catch (LexicalException ee) {System.out.println("caught DoStatement");} catch(SyntaxException aa) {System.out.println("caught DoStatement");}
@@ -721,12 +738,16 @@ public class Parser implements IParser {
         try { 
             match(RES_if);
             gbl = GuardedBlock();
+            listbl.add(gbl);
+
             match(BOX);
+
             gbl = GuardedBlock();
-            match(RES_od);
+            listbl.add(gbl);
             match(RES_fi);
+            
             return new IfStatement(firstToken,listbl);
-        } catch (LexicalException ee) {System.out.println("caught ReturnStatement");} catch(SyntaxException aa) {System.out.println("caught ReturnStatement");}
+        } catch (LexicalException ee) {System.out.println("caught IfStatement");} catch(SyntaxException aa) {System.out.println("caught IfStatement");}
 
         try {
             match(RETURN);
@@ -735,9 +756,12 @@ public class Parser implements IParser {
         } catch (LexicalException ee) {System.out.println("caught ReturnStatement");} catch(SyntaxException aa) {System.out.println("caught ReturnStatement");}
 
         try {
-            match(BLOCK_OPEN);
-            bl = BlockStatement();
-            return new StatementBlock(firstToken,bl);
+            System.out.println(t);
+            if (isKind(BLOCK_OPEN)) {
+                bl = BlockStatement();
+                return new StatementBlock(firstToken,bl);
+            }
+            
         } catch (LexicalException ee) {System.out.println("caught BlockStatement");}catch(SyntaxException aa) {System.out.println("caught BlockStatement");}
 
         return null;
@@ -750,19 +774,19 @@ public class Parser implements IParser {
         IToken firstToken = t;
         Expr e = null;
         Block bl = null;
-
         e = expr();
-        consume();
         match(RARROW);
         bl = Block();
-        consume();
-
         return new GuardedBlock(firstToken, e, bl);
     }
 	//BlockStatement ::= Block
     Block BlockStatement() throws SyntaxException, LexicalException {
         System.out.println("BlockStatement()");
-        return Block();
+        Block b = null;
+        System.out.println(t);
+        b = Block();
+        System.out.println(b);
+        return b;
     }
 }
 
