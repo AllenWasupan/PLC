@@ -68,12 +68,15 @@ public class Parser implements IParser {
 	}
     
     void match(Kind kind) throws LexicalException {
-        if (isKind(kind)) {
+        try {
+            if (isKind(kind)) {
             t = lexer.next();
-        }
-        else {
-            throw new LexicalException("Parsing bug");
-        }
+            }
+            else {
+                throw new LexicalException("Match bug");
+            }
+        } catch(LexicalException e) {throw new LexicalException("Match bug");}
+        
     }
 
     // goes to next token
@@ -127,9 +130,17 @@ public class Parser implements IParser {
             System.out.println(d);
             if (d.getNameDef() == null) {
                 s = Statement();
-                System.out.println(s);
+                System.out.println("s " + s);
                 if (s == null) {
-                    
+                    if (next == null) {
+                        if (isKind(BLOCK_CLOSE)){
+
+                        }
+                        else {
+                           throw new SyntaxException(); 
+                        }
+                        
+                    }
                     break;
                 }
                 else {
@@ -195,6 +206,7 @@ public class Parser implements IParser {
                 type = Type();
                 System.out.println(t);
                 if (isKind(IDENT)) {
+                    System.out.println("n + " + t);
                     token = t;
                     consume();
                 }
@@ -206,9 +218,9 @@ public class Parser implements IParser {
                 return new NameDef(firstToken,type,dim,token);
             }
             
-        }catch(SyntaxException ignored) {throw new SyntaxException(null);}catch(LexicalException ignored) {throw new SyntaxException(null);}
-        return null;
+        }catch(SyntaxException ignored) {throw new SyntaxException(null);}catch(LexicalException ignored) {throw new LexicalException(null);}
         
+        return null;
     }
 
 	//Type ::= image | pixel | int | string | void | boolean 
@@ -254,9 +266,14 @@ public class Parser implements IParser {
         Expr e = null;
 
         n = NameDef();
+        
+        
+        System.out.println("namedef + " + t);
         if (isKind(ASSIGN)) {
+            System.out.println(t);
             consume();
             System.out.println(t);
+            System.out.println("What");
             e = expr();
         }
         return new Declaration(firstToken, n, e);
@@ -708,13 +725,15 @@ public class Parser implements IParser {
         try {
             System.out.println(t);
             l = LValue();
-            System.out.println(t);
+            System.out.println("assign " + t);
+            
             match(ASSIGN);
-            System.out.println(t);
+            System.out.println("e " + t);
             e = expr();
             
             return new AssignmentStatement(firstToken,l,e);
-        } catch (LexicalException ee) {System.out.println("caught AssignmentStatement");} catch(SyntaxException aa) {System.out.println("caught AssignmentStatement");}
+        } catch (LexicalException ee) {if (isKind(ASSIGN)) {throw new LexicalException(null, null);} System.out.println("caught AssignmentStatement" + t);} 
+        catch(SyntaxException aa) {System.out.println("caught AssignmentStatement");}
 
         try {
             match(RES_write);
@@ -726,11 +745,12 @@ public class Parser implements IParser {
             match(RES_do);
             gbl = GuardedBlock();
             listbl.add(gbl);
+            while (isKind(BOX)) {
+                match(BOX);
 
-            match(BOX);
-            gbl = GuardedBlock();
-            listbl.add(gbl);
-
+                gbl = GuardedBlock();
+                listbl.add(gbl);
+            }
             match(RES_od);
             return new DoStatement(firstToken,listbl); 
         } catch (LexicalException ee) {System.out.println("caught DoStatement");} catch(SyntaxException aa) {System.out.println("caught DoStatement");}
@@ -739,11 +759,13 @@ public class Parser implements IParser {
             match(RES_if);
             gbl = GuardedBlock();
             listbl.add(gbl);
-
-            match(BOX);
-
-            gbl = GuardedBlock();
-            listbl.add(gbl);
+            System.out.println("Size " + listbl.size());
+            while (isKind(BOX)) {
+                match(BOX);
+                gbl = GuardedBlock();
+                listbl.add(gbl);
+            }
+            
             match(RES_fi);
             
             return new IfStatement(firstToken,listbl);
@@ -774,9 +796,20 @@ public class Parser implements IParser {
         IToken firstToken = t;
         Expr e = null;
         Block bl = null;
+        
         e = expr();
-        match(RARROW);
+        System.out.println("GuardedBlock() e");
+        System.out.println(e);
+        System.out.println(t);
+        if (isKind(RARROW)) {
+            match(RARROW);
+        }
+        else {
+            throw new LexicalException(null, null);
+        }
+        System.out.println("GuardedBlock() block");
         bl = Block();
+        System.out.println("Size " + bl);
         return new GuardedBlock(firstToken, e, bl);
     }
 	//BlockStatement ::= Block
