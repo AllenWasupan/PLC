@@ -10,6 +10,7 @@
 package edu.ufl.cise.cop4020fa23.ast;
 
 import edu.ufl.cise.cop4020fa23.IToken;
+import edu.ufl.cise.cop4020fa23.exceptions.PLCCompilerException;
 
 public abstract class Expr extends AST {
 
@@ -18,6 +19,8 @@ public abstract class Expr extends AST {
 	}
 
 	Type type;  
+	
+	public abstract Object visit(ASTVisitor v, Object arg) throws PLCCompilerException;
 
 	public Type getType() {
 		return type;

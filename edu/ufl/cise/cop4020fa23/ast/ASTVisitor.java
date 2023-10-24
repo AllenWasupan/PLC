@@ -196,3 +196,232 @@ public interface ASTVisitor {
 
 
 }
+
+class Visitor implements ASTVisitor {
+
+    public Object visitAssignmentStatement(AssignmentStatement assignmentStatement, Object arg) throws PLCCompilerException {
+		return assignmentStatement;
+        
+    }
+
+	/**
+	 * @param binaryExpr
+	 * @param arg
+	 * @return
+	 */
+	public Object visitBinaryExpr(BinaryExpr binaryExpr, Object arg) throws PLCCompilerException {
+		return binaryExpr;
+    }
+
+	/**
+	 * @param block
+	 * @param arg
+	 * @return
+	 */
+	public Object visitBlock(Block block, Object arg) throws PLCCompilerException {
+		return block;
+    }
+
+
+	/**
+	 * @param statementBlock
+	 * @param arg
+	 * @return
+	 */
+	public Object visitBlockStatement(StatementBlock statementBlock, Object arg) throws PLCCompilerException{
+        return statementBlock;
+    }
+
+	/**
+	 * @param channelSelector
+	 * @param arg
+	 * @return
+	 */
+	public Object visitChannelSelector(ChannelSelector channelSelector, Object arg) throws PLCCompilerException{
+        return channelSelector;
+    }
+
+	/**
+	 * @param conditionalExpr
+	 * @param arg
+	 * @return
+	 */
+	public Object visitConditionalExpr(ConditionalExpr conditionalExpr, Object arg) throws PLCCompilerException{
+        return conditionalExpr;
+    }
+
+	/**
+	 * @param declaration
+	 * @param arg
+	 * @return
+	 */
+	public Object visitDeclaration(Declaration declaration, Object arg) throws PLCCompilerException{
+        return declaration;
+    }
+
+	/**
+	 * @param dimension
+	 * @param arg
+	 * @return
+	 */
+	public Object visitDimension(Dimension dimension, Object arg) throws PLCCompilerException {
+        return dimension;
+    }
+
+	/**
+	 * @param doStatement
+	 * @param arg
+	 * @return
+	 */
+	public Object visitDoStatement(DoStatement doStatement, Object arg) throws PLCCompilerException{
+        return doStatement;
+    }
+
+	/**
+	 * @param expandedPixelExpr
+	 * @param arg
+	 * @return
+	 */
+	public Object visitExpandedPixelExpr(ExpandedPixelExpr expandedPixelExpr, Object arg) throws PLCCompilerException{
+        return expandedPixelExpr;
+    }
+
+	/**
+	 * @param guardedBlock
+	 * @param arg
+	 * @return
+	 */
+	public Object visitGuardedBlock(GuardedBlock guardedBlock, Object arg) throws PLCCompilerException{
+        return guardedBlock;
+    }
+
+	/**
+	 * @param identExpr
+	 * @param arg
+	 * @return
+	 */
+	public Object visitIdentExpr(IdentExpr identExpr, Object arg) throws PLCCompilerException{
+        return identExpr;
+    }
+
+	/**
+	 * @param ifStatement
+	 * @param arg
+	 * @return
+	 */
+	public Object visitIfStatement(IfStatement ifStatement, Object arg) throws PLCCompilerException{
+        return ifStatement;
+    }
+
+	/**
+	 * @param lValue
+	 * @param arg
+	 * @return
+	 */
+	public Object visitLValue(LValue lValue, Object arg) throws PLCCompilerException{
+        return lValue;
+    }
+
+	/**
+	 * @param nameDef
+	 * @param arg
+	 * @return
+	 */
+	public Object visitNameDef(NameDef nameDef, Object arg) throws PLCCompilerException{
+        return nameDef;
+    }
+
+	/**
+	 * @param numLitExpr
+	 * @param arg
+	 * @return
+	 */
+	public Object visitNumLitExpr(NumLitExpr numLitExpr, Object arg) throws PLCCompilerException{
+        return numLitExpr;
+    }
+
+	/**
+	 * @param pixelSelector
+	 * @param arg
+	 */
+	public Object visitPixelSelector(PixelSelector pixelSelector, Object arg) throws PLCCompilerException{
+        return pixelSelector;
+    }
+
+	/**
+	 * 
+	 * @param postfixExpr
+	 * @param arg
+	 * @return
+	 * @throws PLCCompilerException
+	 */
+	public Object visitPostfixExpr(PostfixExpr postfixExpr, Object arg) throws PLCCompilerException{
+        return postfixExpr;
+    }
+
+	/**
+	 * @param program
+	 * @param arg
+	 * @return
+	 * @throws PLCCompilerException 
+	 */
+	public Object visitProgram(Program program, Object arg) throws PLCCompilerException{
+        return program;
+    }
+
+	/**
+	 * @param returnStatement
+	 * @param object
+	 * @return
+	 */
+	public Object visitReturnStatement(ReturnStatement returnStatement, Object arg) throws PLCCompilerException{
+        return returnStatement;
+    }
+
+	/**
+	 * @param stringLitExpr
+	 * @param arg
+	 * @return
+	 */
+	public Object visitStringLitExpr(StringLitExpr stringLitExpr, Object arg) throws PLCCompilerException{
+        return stringLitExpr;
+    }
+
+	/**
+	 * @param unaryExpr
+	 * @param arg
+	 * @return
+	 */
+	public Object visitUnaryExpr(UnaryExpr unaryExpr, Object arg)throws PLCCompilerException{
+        return unaryExpr;
+    }
+
+	/**
+	 * @param writeStatement
+	 * @param arg
+	 * @return
+	 */
+	public Object visitWriteStatement(WriteStatement writeStatement, Object arg) throws PLCCompilerException{
+        return writeStatement;
+    }
+
+	/**
+	 * @param expandedPixelExpr
+	 * @param arg
+	 * @return
+	 */
+
+	public Object visitBooleanLitExpr(BooleanLitExpr booleanLitExpr, Object arg) throws PLCCompilerException{
+        return booleanLitExpr;
+    }
+
+	/**
+	 * @param loopAssignmentStatement
+	 * @param arg
+	 * @return
+	 */
+
+	public Object visitConstExpr(ConstExpr constExpr, Object arg) throws PLCCompilerException{
+        return constExpr;
+    }
+}
