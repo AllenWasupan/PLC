@@ -502,7 +502,7 @@ public class TypeCheckVisitor implements ASTVisitor {
 		Type type;
 		Expr x = pixelSelector.xExpr();
 		Expr y = pixelSelector.yExpr();
-
+		/* 
 		if (arg == "LValue") {
 
 			System.out.println("x " + pixelSelector.xExpr());
@@ -517,7 +517,7 @@ public class TypeCheckVisitor implements ASTVisitor {
 			y.visit(this, arg);
 
 			throw new TypeCheckException("'visitPixelSelector'");
-		}
+		}*/
 		
 		x.visit(this, arg);
 		y.visit(this, arg);
