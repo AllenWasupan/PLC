@@ -416,7 +416,13 @@ public class TypeCheckVisitor implements ASTVisitor {
 	public Object visitIdentExpr(IdentExpr identExpr, Object arg) throws PLCCompilerException {
 		System.out.println("\nvisitIdentExpr");
 		System.out.println(identExpr);
-		NameDef n = st.lookup(identExpr.getName());
+		String name = identExpr.getName();
+		
+		if (arg == "LValue") {
+			NameDef n = new SyntheticNameDef(name);
+			st.insert(n);
+		}
+		NameDef n = st.lookup(name);
 		
 		Type type;
 		if (n != null) {
@@ -499,29 +505,23 @@ public class TypeCheckVisitor implements ASTVisitor {
 	public Object visitPixelSelector(PixelSelector pixelSelector, Object arg) throws PLCCompilerException {
 		System.out.println("\nvisitPixelSelector");
 		System.out.println(arg);
-		Type type;
 		Expr x = pixelSelector.xExpr();
 		Expr y = pixelSelector.yExpr();
-		/* 
+		//Class<? extends Expr> c = edu.ufl.cise.cop4020fa23.ast.IdentExpr;
 		if (arg == "LValue") {
-
 			System.out.println("x " + pixelSelector.xExpr());
 			System.out.println("y " + pixelSelector.yExpr());
-			st.enterScope();
-			NameDef xn = new SyntheticNameDef("x");
-			st.insert(xn);
-			NameDef yn = new SyntheticNameDef("y");
-			st.insert(yn);
-			
+
+			st.enterScope();			
 			x.visit(this, arg);
 			y.visit(this, arg);
+			System.out.println("x " + x.getClass());
 
-			throw new TypeCheckException("'visitPixelSelector'");
-		}*/
+			//throw new TypeCheckException("'visitPixelSelector'");
+		}
 		
 		x.visit(this, arg);
 		y.visit(this, arg);
-		type = Type.INT;
 		check(x.getType() == Type.INT,x,"oof");
 		check(y.getType() == Type.INT,y,"oof");
 		
