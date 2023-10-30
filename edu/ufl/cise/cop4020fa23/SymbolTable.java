@@ -115,4 +115,13 @@ class Entry {
     NameDef getNameDef() {
         return this.nameDef;
     }
+    /* 
+    public String getText() {
+		return firstToken.text();
+	}
+
+	@Override
+	public String toString() {
+		return "BooleanLitExpr [" + getText() + "]";
+	}*/
 }
