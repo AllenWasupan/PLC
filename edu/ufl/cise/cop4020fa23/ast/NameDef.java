@@ -23,6 +23,7 @@ public class NameDef extends AST {
 	final IToken identToken;
 	final Dimension dimension;	
 	String javaName;
+	Type type;
 	
 	/**
 	 * @param firstToken
@@ -76,6 +77,10 @@ public class NameDef extends AST {
 
 	public Type getType() {
 		return Type.kind2type(typeToken.kind());
+	}
+
+	public void setType(Type type) {
+		this.type = type;
 	}
 
 	/**

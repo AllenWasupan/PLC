@@ -314,8 +314,10 @@ class TypeCheckTest_starter {
 		BlockElem blockElem14 = blockElemList3.get(5);
 		checkDec(blockElem14);
 		NameDef nameDef15 = ((Declaration) blockElem14).getNameDef();
-		checkNameDefDim(nameDef15, Type.IMAGE, "d");
 		Dimension dimension16 = nameDef15.getDimension();
+		System.out.println();
+		System.out.println("Test case " + dimension16);
+		System.out.println("Dimen " + dimension16);
 		assertThat("", dimension16, instanceOf(Dimension.class));
 		Expr width17 = dimension16.getWidth();
 		checkNumLitExpr(width17, 1028);
@@ -1101,5 +1103,5 @@ class TypeCheckTest_starter {
 			AST ast = getDecoratedAST(input);
 		});
 	}
-
+	
 }

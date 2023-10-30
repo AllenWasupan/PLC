@@ -654,7 +654,7 @@ public class Parser implements IParser {
             System.out.println("lsquare passed");
             consume();
             e1 = expr();
-            System.out.println("uh");
+            System.out.println("e1 " + e1);
         }
         else {
             return null;
@@ -664,9 +664,10 @@ public class Parser implements IParser {
             System.out.println("comma passed");
             consume();
             e2 = expr();
-            
+            System.out.println("e2 " + e2);
             match(RSQUARE);
             System.out.println("rsquare passed");
+            
             return new Dimension(firstToken, e1, e2);
         }
 
