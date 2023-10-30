@@ -383,6 +383,7 @@ class TypeCheckTest_starter {
 		checkIdentExpr(expr13, "j", Type.IMAGE);
 		PixelSelector pixel14 = ((PostfixExpr) expr12).pixel();
 		Expr x15 = pixel14.xExpr();
+		System.out.println("Test " + pixel14);
 		checkNumLitExpr(x15, 3);
 		Expr y16 = pixel14.yExpr();
 		checkNumLitExpr(y16, 4);
@@ -527,6 +528,7 @@ class TypeCheckTest_starter {
 		NameDef nameDef20 = ((Declaration) blockElem19).getNameDef();
 		checkNameDef(nameDef20, Type.INT, "x");
 		Expr expr21 = ((Declaration) blockElem19).getInitializer();
+		System.out.println("Expr21 " + expr21.getType());
 		checkNumLitExpr(expr21, 3);
 		BlockElem blockElem22 = blockElemList18.get(1);
 		checkDec(blockElem22);

@@ -1,5 +1,7 @@
 package edu.ufl.cise.cop4020fa23;
 
+import static org.junit.jupiter.api.Assertions.fail;
+
 import java.util.List;
 
 import edu.ufl.cise.cop4020fa23.ast.AST;
@@ -49,7 +51,7 @@ public class TypeCheckVisitor implements ASTVisitor {
 	private void check(boolean b, Object object, String string) throws TypeCheckException {
 		System.out.println("check");
 		if (b == false) {
-			throw new TypeCheckException();
+			throw new TypeCheckException(string);
 		}
 	}
 
@@ -86,8 +88,10 @@ public class TypeCheckVisitor implements ASTVisitor {
 		List<BlockElem> blockElems = block.getElems();
 		for (BlockElem elem : blockElems) {
 			elem.visit(this, arg);
+			System.out.println("Block elem " + elem);
 		}
 		st.leaveScope();
+		System.out.println("leaving vblock");
 		return block;
 	}
 
@@ -106,16 +110,19 @@ public class TypeCheckVisitor implements ASTVisitor {
 		
 		System.out.println("nameDef " + nameDef);
 		if (d != null) {
-			d.visit(this, arg);
-			type = Type.IMAGE;
-			st.insert(nameDef);
-			return type;
+			if (type == Type.IMAGE) {
+				d.visit(this, arg);
+
+				nameDef.setType(type);				
+				st.insert(nameDef);
+				return nameDef;
+			}
 		}
 		else if (type == Type.INT || type == Type.BOOLEAN || type == Type.STRING || type == Type.PIXEL || type == Type.IMAGE) {
-			type = Type.kind2type(nameDef.getTypeToken().kind());
+			
 			nameDef.setType(type);
 			st.insert(nameDef);
-			return type;
+			return nameDef;
 		}
 			
 
@@ -132,24 +139,32 @@ public class TypeCheckVisitor implements ASTVisitor {
 	 */
 	@Override
 	public Object visitDeclaration(Declaration declaration, Object arg) throws PLCCompilerException {
-		System.out.println("visitDeclaration");
+		System.out.println("\nvisitDeclaration");
 		System.out.println(declaration);
 		Type type;
 		
 		Expr e = declaration.getInitializer();
-		NameDef n = declaration.getNameDef();
-		n.visit(this, arg);
 		
+		System.out.println("visitdec E " + e);
 		if (e != null) {
+			System.out.println(e.getType());
 			e.visit(this, arg);
 			System.out.println("E " + e);
 			System.out.println("Type " + e.getType());
 		}
-		
+
+		NameDef n = declaration.getNameDef();
 		System.out.println("N " + n);
+		n.visit(this, arg);
+		
+		
 		if (e == null || e.getType() == n.getType() || (e.getType() ==  Type.STRING && n.getType() == Type.IMAGE)) {
+			
 			type = n.getType();
+			
 			n.setType(type);
+			System.out.println("leaving visitdec");
+			System.out.println(declaration);
 			
 			return declaration;
 		}
@@ -169,11 +184,15 @@ public class TypeCheckVisitor implements ASTVisitor {
 	@Override
 	public Object visitConditionalExpr(ConditionalExpr conditionalExpr, Object arg) throws PLCCompilerException {
 		System.out.println("visitConditionalExpr");
-		Type typeG = (Type) conditionalExpr.getGuardExpr().visit(this, arg);
-		check(typeG == Type.BOOLEAN, conditionalExpr, "image width must be bool");
-		Type typeT = (Type) conditionalExpr.getTrueExpr().visit(this, arg);
-		check(typeT == conditionalExpr.getFalseExpr().getType(), conditionalExpr, "image width must be bool");
-		conditionalExpr.setType(typeT);
+		Expr g = conditionalExpr.getGuardExpr();
+		g.visit(this, arg);
+		Expr t = conditionalExpr.getTrueExpr();
+		t.visit(this, arg);
+		Expr f = conditionalExpr.getFalseExpr();
+		f.visit(this, arg);
+		check(g.getType() == Type.BOOLEAN, conditionalExpr, "GuardExpr must be bool");
+		check(t.getType() == f.getType(), conditionalExpr, "t = f");
+		conditionalExpr.setType(t.getType());
 		return conditionalExpr;
 	}
 	
@@ -262,10 +281,10 @@ public class TypeCheckVisitor implements ASTVisitor {
 		
 		if (infertype != null) {
 			binaryExpr.setType(infertype);
-			return binaryExpr;
+			return infertype;
 		}
 		
-		throw new UnsupportedOperationException("Unimplemented Method ASTVisitor.visitBinaryExpr invoked.");
+		throw new TypeCheckException("Unimplemented Method ASTVisitor.visitBinaryExpr invoked.");
 	}
 
 	/*
@@ -300,7 +319,7 @@ public class TypeCheckVisitor implements ASTVisitor {
 			throw new TypeCheckException("visitUnaryExpr");
 		}
 		unaryExpr.setType(type);
-		return unaryExpr;
+		return type;
 	}
 
 	/*
@@ -309,34 +328,50 @@ public class TypeCheckVisitor implements ASTVisitor {
 	 */
 	@Override
 	public Object visitPostfixExpr(PostfixExpr postfixExpr, Object arg) throws PLCCompilerException {
-		System.out.println("visitPostfixExpr");
+		System.out.println("\nvisitPostfixExpr");
+		System.out.println(postfixExpr);
+		
 		Type type;
-		Type e = postfixExpr.getType();
+		postfixExpr.primary().visit(this, arg);
+		Type e = postfixExpr.primary().getType();
+		System.out.println("e " + e);
 		PixelSelector p = postfixExpr.pixel();
+		if (p != null) {
+			p.visit(this, arg);
+		}
+		
+		System.out.println("p " + p);
 		ChannelSelector c = postfixExpr.channel();
+		if (c != null) {
+			c.visit(this, arg);
+		}
+		
+		System.out.println("c " + c);
+
 		if (p == null && c == null) {
 			type = e;
 			postfixExpr.setType(type);
-			return postfixExpr;
+			return type;
 		}
 		if (e == Type.IMAGE) {
 			if (p != null) {
 				if (c == null) {
 					type = Type.PIXEL;
 					postfixExpr.setType(type);
-					return postfixExpr;
+					return type;
 				}
 				else {
+					System.out.println("YOOOOO");
 					type = Type.INT;
 					postfixExpr.setType(type);
-					return postfixExpr;
+					return type;
 				}
 			}
 			else {
 				if (c != null) {
 					type = Type.IMAGE;
 					postfixExpr.setType(type);
-					return postfixExpr;
+					return type;
 				}
 			}
 		}
@@ -344,7 +379,7 @@ public class TypeCheckVisitor implements ASTVisitor {
 			if (p == null && c != null) {
 				type = Type.INT;
 				postfixExpr.setType(type);
-				return postfixExpr;
+				return type;
 			}
 		}
 		throw new TypeCheckException("visitPostfixExpr");
@@ -366,6 +401,7 @@ public class TypeCheckVisitor implements ASTVisitor {
 		System.out.println("visitNumLitExpr");
 		Type type = Type.INT;
 		numLitExpr.setType(type);
+		
 		return type;
 	}
 	
@@ -377,14 +413,20 @@ public class TypeCheckVisitor implements ASTVisitor {
 	 */
 	@Override
 	public Object visitIdentExpr(IdentExpr identExpr, Object arg) throws PLCCompilerException {
-		System.out.println("visitIdentExpr");
-		String name = identExpr.getName();
-		 
-		if (st.lookup(name) != null) {
-			identExpr.setType(identExpr.getNameDef().getType());
-			return identExpr;
+		System.out.println("\nvisitIdentExpr");
+		System.out.println(identExpr);
+		NameDef n = st.lookup(identExpr.getName());
+		
+		Type type;
+		if (n != null) {
+			System.out.println("leaving visitident " + n);
+			identExpr.setNameDef(n);
+			type = n.getType();
+			identExpr.setType(type);
+			System.out.println("Type " + identExpr.getType());
+			return type;
 		}
-		throw new TypeCheckException("Unimplemented method 'visitIdentExpr'");
+		throw new TypeCheckException("visitIdentExpr");
 	}
 
 	/*
@@ -409,6 +451,7 @@ public class TypeCheckVisitor implements ASTVisitor {
 		
 		//throw new TypeCheckException("visitConstExpr");
 	}
+
 	/*
 	 * BooleanLitExpr  
 		 BooleanLitExpr.type <- BOOLEAN 
@@ -421,10 +464,14 @@ public class TypeCheckVisitor implements ASTVisitor {
 		return type;
 	}
 
+	/*
+	 * ChannelSelector ::= red |  green |  blue
+	 */
 	@Override
 	public Object visitChannelSelector(ChannelSelector channelSelector, Object arg) throws PLCCompilerException {
 		System.out.println("visitChannelSelector");
 		// TODO Auto-generated method stub
+
 		return channelSelector;
 		//throw new UnsupportedOperationException("Unimplemented method 'visitChannelSelector'");
 	}
@@ -450,8 +497,14 @@ public class TypeCheckVisitor implements ASTVisitor {
 	@Override
 	public Object visitPixelSelector(PixelSelector pixelSelector, Object arg) throws PLCCompilerException {
 		System.out.println("visitPixelSelector");
-		// TODO Auto-generated method stub
-		throw new UnsupportedOperationException("Unimplemented method 'visitPixelSelector'");
+		Expr x = pixelSelector.xExpr();
+		x.visit(this, arg);
+		Expr y = pixelSelector.yExpr();
+		y.visit(this, arg);
+		check(x.getType() == Type.INT,x,"oof");
+		check(y.getType() == Type.INT,y,"oof");
+		return pixelSelector;
+		//throw new TypeCheckException("'visitPixelSelector'");
 	}
 
 	/*
@@ -503,11 +556,13 @@ public class TypeCheckVisitor implements ASTVisitor {
 	public Object visitLValue(LValue lValue, Object arg) throws PLCCompilerException {
 		System.out.println("visitLValue");
 		Type type;
-		NameDef n = lValue.getNameDef();
+
 		PixelSelector p = lValue.getPixelSelector();
 		ChannelSelector c = lValue.getChannelSelector();
+		System.out.println(lValue);
+		NameDef n = st.lookup(lValue.getName());
+		lValue.setNameDef(n);
 		Type v = lValue.getVarType();
-		lValue.setNameDef(st.lookup(lValue.getName()));
 		lValue.setType(n.getType());
 		type = n.getType();
 		if (p != null) {
@@ -605,22 +660,37 @@ public class TypeCheckVisitor implements ASTVisitor {
 	@Override
 	public Object visitDoStatement(DoStatement doStatement, Object arg) throws PLCCompilerException {
 		System.out.println("visitDoStatement");
-		// TODO Auto-generated method stub
-		throw new TypeCheckException("visitDoStatement");
+		System.out.println(doStatement);
+		List<GuardedBlock> d = doStatement.getGuardedBlocks();
+		for (int i = 0; i < d.size(); i++) {
+			d.get(i).getGuard().visit(this, arg);
+			System.out.println(d.get(i).getGuard());
+			System.out.println(d.get(i).getGuard().getType());
+			if (d.get(i).getGuard().getType() != Type.BOOLEAN) {
+				throw new TypeCheckException("visitDoStatement");
+			}
+		}
+		return doStatement;
 	}
 
 	@Override
 	public Object visitIfStatement(IfStatement ifStatement, Object arg) throws PLCCompilerException {
 		System.out.println("visitIfStatement");
-		// TODO Auto-generated method stub
-		throw new TypeCheckException("visitIfStatement");
+		List<GuardedBlock> g = ifStatement.getGuardedBlocks();
+		for (int i = 0; i < g.size(); i++) {
+			g.get(i).getGuard().visit(this, arg);
+			if (g.get(i).getGuard().getType() != Type.BOOLEAN) {
+				throw new TypeCheckException("visitIfStatement");
+			}
+		}
+		return ifStatement;
 	}
 
 	@Override
 	public Object visitGuardedBlock(GuardedBlock guardedBlock, Object arg) throws PLCCompilerException {
 		System.out.println("visitGuardedBlock");
-		// TODO Auto-generated method stub
-		throw new TypeCheckException("visitGuardedBlock");
+		check(guardedBlock.getGuard().getType() == Type.BOOLEAN,guardedBlock,"oof");
+		return guardedBlock;
 	}
 
 	/*
@@ -638,8 +708,9 @@ public class TypeCheckVisitor implements ASTVisitor {
 	@Override
 	public Object visitBlockStatement(StatementBlock statementBlock, Object arg) throws PLCCompilerException {
 		System.out.println("visitBlockStatement");
-		// TODO Auto-generated method stub
-		throw new TypeCheckException("visitBlockStatement");
+		statementBlock.getBlock().visit(this, arg);
+		return statementBlock;
+		//throw new TypeCheckException("visitBlockStatement");
 	}
 
 }
