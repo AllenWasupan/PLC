@@ -417,18 +417,8 @@ public class TypeCheckVisitor implements ASTVisitor {
 	public Object visitIdentExpr(IdentExpr identExpr, Object arg) throws PLCCompilerException {
 		System.out.println("\nvisitIdentExpr");
 		System.out.println(identExpr);
-<<<<<<< HEAD
 		System.out.println(identExpr.getClass());
 		String name = identExpr.getName();
-=======
-		String name = identExpr.getName();
-		
-		if (arg == "LValue") {
-			NameDef n = new SyntheticNameDef(name);
-			st.insert(n);
-		}
-		NameDef n = st.lookup(name);
->>>>>>> 5228e9db38b307219f159f81792e0b5cc52db437
 		
 		if (arg == "LValue") {		
 			
