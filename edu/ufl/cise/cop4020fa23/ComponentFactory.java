@@ -42,7 +42,7 @@ public class ComponentFactory {
 		}
 
 		public static ASTVisitor makeCodeGenerator() {
-			return null;
+			return new CodeGenVisitor();
 		}
 		
 }
