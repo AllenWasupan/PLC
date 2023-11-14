@@ -2,6 +2,7 @@ package edu.ufl.cise.cop4020fa23;
 
 import java.util.HashMap;
 import java.util.List;
+import java.util.Stack;
 
 import edu.ufl.cise.cop4020fa23.ast.ASTVisitor;
 import edu.ufl.cise.cop4020fa23.ast.AssignmentStatement;
@@ -38,11 +39,11 @@ import edu.ufl.cise.cop4020fa23.runtime.ConsoleIO;
 public class CodeGenVisitor implements ASTVisitor {
     String imp;
 	//String StringBuilder;
-    HashMap<String, Integer> map;
+    HashMap<String, Stack<String>> map;
 
     CodeGenVisitor() {
 		System.out.println("CodeGenVisitor");
-        HashMap<String, Integer> map = new HashMap<>();
+        map = new HashMap<>();
 	}
 
     @Override
@@ -112,10 +113,10 @@ public class CodeGenVisitor implements ASTVisitor {
     @Override
     public Object visitNameDef(NameDef nameDef, Object arg) throws PLCCompilerException {
         System.out.println("visitNameDefG");
+        System.out.println("erm ");
         String t = nameDef.getType().name();
         t = t.toLowerCase();
         String s;
-        //Don't add $ because the thing by apply should not have $
         s = t + " " + nameDef.getIdentToken().text();
         System.out.println(s);
         return s;
@@ -158,8 +159,22 @@ public class CodeGenVisitor implements ASTVisitor {
     public Object visitIdentExpr(IdentExpr identExpr, Object arg) throws PLCCompilerException {
         System.out.println("visitIdentExprG");
         String s;
+        String n;
+        Stack<String> narr;
         s = identExpr.getName();
         System.out.println(s);
+
+        if (map.get(s) == null) {
+            n = s+"$0";
+            narr = new Stack<String>();
+        }
+        else {
+            n = s+"$"+map.get(s).size();
+            narr = map.get(s);
+        }
+        narr.push(n);
+        map.put(s,narr);
+        
         return s;
     }
 
@@ -266,9 +281,12 @@ public class CodeGenVisitor implements ASTVisitor {
 
     @Override
     public Object visitBooleanLitExpr(BooleanLitExpr booleanLitExpr, Object arg) throws PLCCompilerException {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'visitBooleanLitExpr'");
+        String s;
+        s = (String) booleanLitExpr.getText();
+        return s;
     }
+
+
 
     //Ignore until assignment 5
 
