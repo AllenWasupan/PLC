@@ -60,12 +60,11 @@ public class CodeGenVisitor implements ASTVisitor {
 
         p = "";
         for (int i = 0; i < program.getParams().size(); i++) {
-
             String para;
             if (i > 0) {
                 p += ",";
             }
-            para = (String) program.getParams().get(i).visit(this, arg);
+            para = program.getType().toString().toLowerCase() + " " + (String) program.getParams().get(i).visit(this, arg);
             if (para.charAt(0) == 's') {
                 para = 'S' + para.substring(1);
             }
@@ -91,7 +90,6 @@ public class CodeGenVisitor implements ASTVisitor {
             break;
             }
         }
-        
         s += "public class " + program.getName() + "{\r\npublic static " + 
         t + " apply(" + p + ")\r\n" + 
         b + "}";
@@ -120,22 +118,28 @@ public class CodeGenVisitor implements ASTVisitor {
         String t = nameDef.getType().name();
         t = t.toLowerCase();
         String s;
-        s = t + " " + nameDef.getIdentToken().text();
+        s =  nameDef.getIdentToken().text();
 
         String n;
-        Stack<String> narr;
         if (map.get(s) == null) {
-            n = s+"$0";
-            narr = new Stack<String>();
+            Stack<String> narr;
+            if (map.get(s) == null) {
+                n = s + "$0";
+                narr = new Stack<String>();
+            }
+            else {
+                n = s+"$"+map.get(s).size();
+                narr = map.get(s);
+            }
+            narr.push(n);
+            map.put(s,narr);
+            n = t + " " + n;
         }
         else {
-            n = s+"$"+map.get(s).size();
-            narr = map.get(s);
+            n = map.get(s).peek();
+            System.out.println("visitIdentExprG " + n);
         }
-        narr.push(n);
-        map.put(s,narr);
 
-        System.out.println("NARR " + narr);
         System.out.println("namdef returning " + n);
         return n;
     }
