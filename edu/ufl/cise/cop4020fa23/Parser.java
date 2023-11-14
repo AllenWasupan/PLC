@@ -118,19 +118,22 @@ public class Parser implements IParser {
     }
 	//Block ::=  <:  (Declaration ; | Statement ;)*  :> 
     Block Block() throws SyntaxException, LexicalException {
-        System.out.println("Block()");
+        System.out.println("BLOCK()");
         IToken firstToken = t;
         Declaration d = null;
         Statement s = null;
         List<BlockElem> lis = new ArrayList<BlockElem>();
         BlockElem next = null;
+        System.out.println("Starting block loop");
         while (isKind(SEMI,BLOCK_OPEN)) {
             consume();
             d = Declaration();
-            System.out.println(d);
+            System.out.println("Block dec " + d);
             if (d.getNameDef() == null) {
+                System.out.println("t " + t);
                 s = Statement();
                 System.out.println("s " + s);
+                System.out.println("t " + t);
                 if (s == null) {
                     if (next == null) {
                         if (isKind(BLOCK_CLOSE)){
@@ -144,7 +147,9 @@ public class Parser implements IParser {
                     break;
                 }
                 else {
+                    System.out.println("s is not null " + t);
                     next = s;
+
                 }
             }
             else {
@@ -154,6 +159,7 @@ public class Parser implements IParser {
 
             }
             else {
+                System.out.println("THROWN");
                 throw new SyntaxException("Thrown from Block");
             }
             lis.add(next);
@@ -384,18 +390,24 @@ public class Parser implements IParser {
     Expr PowExpr() throws SyntaxException, LexicalException {
         System.out.println("ComparisonExpr()");
         IToken firstToken = t;
+        Expr e = null;
         Expr left = null;
         Expr right = null;
         IToken op = null;
         left = AdditiveExpr();
+        System.out.println("l " + left);
         //consume();
         if(isKind(EXP)) {
+            
             op = t;
+            System.out.println("OP " + op);
             consume();
             right = PowExpr();
-            consume();
-            left = new BinaryExpr(firstToken, left, op, right);
-            
+            System.out.println("RIGHT " + right);
+            e = new BinaryExpr(firstToken, left, op, right);
+            System.out.println("e " + e);
+            System.out.println("t " + t);
+            return e;
         }
         return left;
     }

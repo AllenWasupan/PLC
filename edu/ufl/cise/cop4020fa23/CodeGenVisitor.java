@@ -31,6 +31,7 @@ import edu.ufl.cise.cop4020fa23.ast.StringLitExpr;
 import edu.ufl.cise.cop4020fa23.ast.Type;
 import edu.ufl.cise.cop4020fa23.ast.UnaryExpr;
 import edu.ufl.cise.cop4020fa23.ast.WriteStatement;
+import edu.ufl.cise.cop4020fa23.exceptions.CodeGenException;
 import edu.ufl.cise.cop4020fa23.exceptions.PLCCompilerException;
 import edu.ufl.cise.cop4020fa23.runtime.ConsoleIO;
 
@@ -51,15 +52,26 @@ public class CodeGenVisitor implements ASTVisitor {
         String p;
         String t = program.getType().name();
         t = t.toLowerCase();
+        if (t.charAt(0) == 's') {
+            t = 'S' + t.substring(1);
+        }
         String b = (String) program.getBlock().visit(this, arg);
 
         p = "";
         for (int i = 0; i < program.getParams().size(); i++) {
+            String para;
             if (i > 0) {
                 p += ",";
             }
-            p += program.getParams().get(i).visit(this, arg) + "$1";
-            System.out.println("ayp " + program.getParams().get(i).getName());
+            para = (String) program.getParams().get(i).visit(this, arg);
+            if (para.charAt(0) == 's') {
+                para = 'S' + para.substring(1);
+            }
+            if (para.charAt(0) == 's') {
+                para = 'S' + para.substring(1);
+            }
+            p +=  para;
+            System.out.println("ayp " + para);
         }
 
         s = "package edu.ufl.cise.cop4020fa23;\r\n";
@@ -99,10 +111,11 @@ public class CodeGenVisitor implements ASTVisitor {
 
     @Override
     public Object visitNameDef(NameDef nameDef, Object arg) throws PLCCompilerException {
-        System.out.println("visitNumLitExprG");
+        System.out.println("visitNameDefG");
         String t = nameDef.getType().name();
         t = t.toLowerCase();
         String s;
+        //Don't add $ because the thing by apply should not have $
         s = t + " " + nameDef.getIdentToken().text();
         System.out.println(s);
         return s;
@@ -110,14 +123,26 @@ public class CodeGenVisitor implements ASTVisitor {
 
     @Override
     public Object visitDeclaration(Declaration declaration, Object arg) throws PLCCompilerException {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'visitDeclaration'");
+        System.out.println("visitDeclarationG");
+        String s;
+        String n = (String) declaration.getNameDef().visit(this, arg);
+
+        if (declaration.getInitializer() != null) {
+            String e = (String) declaration.getInitializer().visit(this, arg);
+            s = n + "=" + e + ";\r\n";
+            return s;
+        }
+        s = n + ";\r\n";
+        return s;
     }
 
     @Override
     public Object visitStringLitExpr(StringLitExpr stringLitExpr, Object arg) throws PLCCompilerException {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'visitStringLitExpr'");
+        System.out.println("visitStringLitExprG");
+        String s;
+        s = stringLitExpr.getText();
+        System.out.println(s);
+        return s;
     }
 
     @Override
@@ -133,15 +158,21 @@ public class CodeGenVisitor implements ASTVisitor {
     public Object visitIdentExpr(IdentExpr identExpr, Object arg) throws PLCCompilerException {
         System.out.println("visitIdentExprG");
         String s;
-        s = identExpr.getName() + "$1";
+        s = identExpr.getName();
         System.out.println(s);
         return s;
     }
 
     @Override
     public Object visitConditionalExpr(ConditionalExpr conditionalExpr, Object arg) throws PLCCompilerException {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'visitConditionalExpr'");
+        System.out.println("visitConditionalExprG");
+        String s;
+        String g = (String) conditionalExpr.getGuardExpr().visit(this, arg);
+        String t = (String) conditionalExpr.getTrueExpr().visit(this, arg);
+        String f = (String) conditionalExpr.getFalseExpr().visit(this, arg);
+        s = "(" + g + "?" + t + ":" + f + ")" + ";\r\n";
+        System.out.println(s);
+        return s;
     }
 
     @Override
@@ -158,7 +189,7 @@ public class CodeGenVisitor implements ASTVisitor {
             s = left + ".equals(" + right + ")";
         }
         else if (o == Kind.EXP) {
-            s = "((int)Math.round(Math.pow" + left + "," + right + "))";
+            s = "((int)Math.round(Math.pow(" + left + "," + right + ")))";
         }
         else {
             s = "(" + left + op + right + ")";
@@ -174,22 +205,36 @@ public class CodeGenVisitor implements ASTVisitor {
         String e = (String) unaryExpr.getExpr().visit(this, arg);
         Type l = unaryExpr.getType();
         Kind o = unaryExpr.getOp();
-        String op = unaryExpr.getOp().name();
+        String op;
+        if (o == Kind.MINUS) {
+            op = "-";
+        }
+        else if (o == Kind.BANG) {
+            op = "!";
+        }
+        else {
+            throw new CodeGenException("visitUnaryExprG");
+        }
         s = "(" + op + e + ")";
         return s;
     }
 
     @Override
     public Object visitLValue(LValue lValue, Object arg) throws PLCCompilerException {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'visitLValue'");
+        String s;
+        
+        lValue.getNameDef().visit(this, arg);
+        s = lValue.getName();
+        return s;
     }
 
     @Override
-    public Object visitAssignmentStatement(AssignmentStatement assignmentStatement, Object arg)
-            throws PLCCompilerException {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'visitAssignmentStatement'");
+    public Object visitAssignmentStatement(AssignmentStatement assignmentStatement, Object arg) throws PLCCompilerException {
+        String s;
+        String l = (String) assignmentStatement.getlValue().visit(this, arg);
+        String e = (String) assignmentStatement.getE().visit(this, arg);
+        s = l + "=" + e + ";";
+        return s;
     }
 
     @Override
@@ -199,7 +244,6 @@ public class CodeGenVisitor implements ASTVisitor {
         String s;
         s = "ConsoleIO.write(" + writeStatement.getExpr().visit(this,arg) + ");\r\n";
         System.out.println(s);
-        arg = "write";
         return s;
     }
 
@@ -215,8 +259,9 @@ public class CodeGenVisitor implements ASTVisitor {
 
     @Override
     public Object visitBlockStatement(StatementBlock statementBlock, Object arg) throws PLCCompilerException {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'visitBlockStatement'");
+        String s;
+        s = (String) statementBlock.getBlock().visit(this, arg) + ";";
+        return s;
     }
 
     @Override

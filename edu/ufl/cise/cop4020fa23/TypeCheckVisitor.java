@@ -300,7 +300,7 @@ public class TypeCheckVisitor implements ASTVisitor {
 	public Object visitUnaryExpr(UnaryExpr unaryExpr, Object arg) throws PLCCompilerException {
 		System.out.println("visitUnaryExpr");
 		Type type = null;
-
+		unaryExpr.getExpr().visit(this, arg);
 		Type e = unaryExpr.getExpr().getType();		
 		Kind op = unaryExpr.getOp();
 
