@@ -60,6 +60,7 @@ public class CodeGenVisitor implements ASTVisitor {
 
         p = "";
         for (int i = 0; i < program.getParams().size(); i++) {
+
             String para;
             if (i > 0) {
                 p += ",";
@@ -71,7 +72,9 @@ public class CodeGenVisitor implements ASTVisitor {
             if (para.charAt(0) == 's') {
                 para = 'S' + para.substring(1);
             }
+            
             p +=  para;
+            
             System.out.println("ayp " + para);
         }
 
@@ -93,7 +96,7 @@ public class CodeGenVisitor implements ASTVisitor {
         t + " apply(" + p + ")\r\n" + 
         b + "}";
         System.out.println("yo\n" + s + "\noy");
-        
+        System.out.println(map);
         return s;
     }
 
@@ -113,13 +116,28 @@ public class CodeGenVisitor implements ASTVisitor {
     @Override
     public Object visitNameDef(NameDef nameDef, Object arg) throws PLCCompilerException {
         System.out.println("visitNameDefG");
-        System.out.println("erm ");
+        
         String t = nameDef.getType().name();
         t = t.toLowerCase();
         String s;
         s = t + " " + nameDef.getIdentToken().text();
-        System.out.println(s);
-        return s;
+
+        String n;
+        Stack<String> narr;
+        if (map.get(s) == null) {
+            n = s+"$0";
+            narr = new Stack<String>();
+        }
+        else {
+            n = s+"$"+map.get(s).size();
+            narr = map.get(s);
+        }
+        narr.push(n);
+        map.put(s,narr);
+
+        System.out.println("NARR " + narr);
+        System.out.println("namdef returning " + n);
+        return n;
     }
 
     @Override
@@ -127,10 +145,12 @@ public class CodeGenVisitor implements ASTVisitor {
         System.out.println("visitDeclarationG");
         String s;
         String n = (String) declaration.getNameDef().visit(this, arg);
-
+        System.out.println("visitDeclarationG n " + n);
         if (declaration.getInitializer() != null) {
             String e = (String) declaration.getInitializer().visit(this, arg);
+            System.out.println("visitDeclarationG e " + e);
             s = n + "=" + e + ";\r\n";
+            System.out.println("visitDeclarationG s " + s);
             return s;
         }
         s = n + ";\r\n";
@@ -159,23 +179,29 @@ public class CodeGenVisitor implements ASTVisitor {
     public Object visitIdentExpr(IdentExpr identExpr, Object arg) throws PLCCompilerException {
         System.out.println("visitIdentExprG");
         String s;
-        String n;
-        Stack<String> narr;
         s = identExpr.getName();
-        System.out.println(s);
-
+        
+        String n;
         if (map.get(s) == null) {
-            n = s+"$0";
-            narr = new Stack<String>();
+            Stack<String> narr;
+            if (map.get(s) == null) {
+                n = s + "$0";
+                narr = new Stack<String>();
+            }
+            else {
+                n = s+"$"+map.get(s).size();
+                narr = map.get(s);
+            }
+            narr.push(n);
+            map.put(s,narr);
         }
         else {
-            n = s+"$"+map.get(s).size();
-            narr = map.get(s);
+            System.out.println("visitIdentExprG " + map.get(s));
+            n = map.get(s).peek();
         }
-        narr.push(n);
-        map.put(s,narr);
         
-        return s;
+        System.out.println("Ident Returning " + n);
+        return n;
     }
 
     @Override
@@ -237,9 +263,7 @@ public class CodeGenVisitor implements ASTVisitor {
     @Override
     public Object visitLValue(LValue lValue, Object arg) throws PLCCompilerException {
         String s;
-        
-        lValue.getNameDef().visit(this, arg);
-        s = lValue.getName();
+        s = (String) lValue.getNameDef().visit(this, arg);
         return s;
     }
 
@@ -257,7 +281,7 @@ public class CodeGenVisitor implements ASTVisitor {
         
         System.out.println("visitWriteStatementG");
         String s;
-        s = "ConsoleIO.write(" + writeStatement.getExpr().visit(this,arg) + ");\r\n";
+        s = "ConsoleIO.write(" + writeStatement.getExpr().visit(this, arg) + ");\r\n";
         System.out.println(s);
         return s;
     }
