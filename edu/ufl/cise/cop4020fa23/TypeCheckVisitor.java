@@ -287,7 +287,7 @@ public class TypeCheckVisitor implements ASTVisitor {
 			binaryExpr.setType(infertype);
 			return infertype;
 		}
-		
+		//System.out.println("oof " + typeL + " " + Op + " " + typeR);
 		throw new TypeCheckException("Unimplemented Method ASTVisitor.visitBinaryExpr invoked.");
 	}
 
@@ -560,9 +560,12 @@ public class TypeCheckVisitor implements ASTVisitor {
 		check(r.getType() == Type.INT,r,"oof");
 		check(g.getType() == Type.INT,g,"oof");
 		check(b.getType() == Type.INT,b,"oof");
-		Type type = Type.INT;
+		System.out.println("w checks");
+		Type type = Type.PIXEL;
+		System.out.println("w type1");
 		expandedPixelExpr.setType(type);
-		return expandedPixelExpr;
+		System.out.println("w type2 " + expandedPixelExpr);
+		return type;
 	}
 	
 	//Dimension  ::=  Expr_width  Expr_height
