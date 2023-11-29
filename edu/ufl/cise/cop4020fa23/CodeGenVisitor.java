@@ -4,6 +4,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Stack;
 import java.awt.Color;
+import java.awt.image.BufferedImage;
 
 import edu.ufl.cise.cop4020fa23.ast.ASTVisitor;
 import edu.ufl.cise.cop4020fa23.ast.AssignmentStatement;
@@ -36,18 +37,24 @@ import edu.ufl.cise.cop4020fa23.ast.WriteStatement;
 import edu.ufl.cise.cop4020fa23.exceptions.CodeGenException;
 import edu.ufl.cise.cop4020fa23.exceptions.PLCCompilerException;
 import edu.ufl.cise.cop4020fa23.runtime.ConsoleIO;
+import edu.ufl.cise.cop4020fa23.runtime.ImageOps;
+import edu.ufl.cise.cop4020fa23.runtime.ImageOps.OP;
 
 public class CodeGenVisitor implements ASTVisitor {
     String imp;
 	//String StringBuilder;
     HashMap<String, Stack<String>> map;
-
+    HashMap<String, String> valmap;
     CodeGenVisitor() {
 		System.out.println("CodeGenVisitor");
         map = new HashMap<>();
+        valmap = new HashMap<>();
 	}
+
     String type(String t) {
+        
         t = t.toLowerCase();
+        System.out.println("Type " + t);
         if (t.equals("string")) {
             t = "String";
         }
@@ -62,9 +69,23 @@ public class CodeGenVisitor implements ASTVisitor {
         }
         return t;
     }
+    String search(String s) {
+        System.out.println("search");
+        String sol = null;
+        for (int i = 0; i < s.length(); i++) {
+            if (s.charAt(i) == '$') {
+                sol = s.substring(0, i);
+                System.out.println("found " + sol);
+            }
+        }
+        
+        return sol;
+    }
+
+
     @Override
     public Object visitProgram(Program program, Object arg) throws PLCCompilerException {
-        System.out.println("visitProgramGen");
+        System.out.println("A\nA\nA\nvisitProgramGen");
         String s;
         String p;
         String t = program.getType().name();
@@ -78,9 +99,10 @@ public class CodeGenVisitor implements ASTVisitor {
             if (i > 0) {
                 p += ",";
             }
-            para = program.getType().toString().toLowerCase() + " " + (String) program.getParams().get(i).visit(this, arg);
+            para = program.getType().toString().toLowerCase();
             para = type(para);
-            
+            System.out.println("errrmmm " + program.getParams().get(i));
+            para += " " + (String) program.getParams().get(i).visit(this, arg);
             p +=  para;
             
             System.out.println("ayp " + para);
@@ -91,9 +113,10 @@ public class CodeGenVisitor implements ASTVisitor {
 
         String e = "";
         List<BlockElem> elems = program.getBlock().getElems();
+        //System.out.println("elems in prog " + elems);
         for (int i = 0; i < elems.size(); i++) {
             e = elems.get(i).getClass().getName();
-            System.out.println("e " + e);
+            //System.out.println("e " + e);
             if (e == "edu.ufl.cise.cop4020fa23.ast.WriteStatement") {
             s += "import edu.ufl.cise.cop4020fa23.runtime.ConsoleIO;\r\n";
             break;
@@ -102,14 +125,14 @@ public class CodeGenVisitor implements ASTVisitor {
         s += "public class " + program.getName() + "{\r\npublic static " + 
         t + " apply(" + p + ")\r\n" + 
         b + "}";
-        System.out.println("yo\n" + s + "\noy");
-        System.out.println(map);
+        //System.out.println("yo\n" + s + "\noy");
+        System.out.println("Map " + map + "\n");
         return s;
     }
 
     @Override
     public Object visitBlock(Block block, Object arg) throws PLCCompilerException {
-        System.out.println("visitBlockGen");
+        System.out.println("\nvisitBlockGen");
         String s;
         String e = "";
         List<BlockElem> elems = block.getElems();
@@ -117,6 +140,7 @@ public class CodeGenVisitor implements ASTVisitor {
             e = e + elems.get(i).visit(this,arg);
             System.out.println("ayb " + e);
         }
+        System.out.println("BLOCKBLOCK " + e + "\nA\n");
         s = "{" + e + "}";
         return s;
     }
@@ -161,14 +185,31 @@ public class CodeGenVisitor implements ASTVisitor {
         System.out.println("visitDeclarationG");
         String s;
         String n = (String) declaration.getNameDef().visit(this, arg);
+        
+        String[] typename = n.split(" ");
+        String name = typename[1];
         System.out.println("visitDeclarationG n " + n);
+
+        if (declaration.getNameDef().getType() == Type.IMAGE) {
+            if (declaration.getInitializer().getType() == Type.STRING) {
+                
+            }
+            if (declaration.getInitializer().getType() == Type.IMAGE) {
+                if (declaration.getNameDef().getDimension() != null) {
+                    ImageOps.cloneImage(null);
+                }
+            }
+        }
+        //Old
         if (declaration.getInitializer() != null) {
             String e = (String) declaration.getInitializer().visit(this, arg);
             System.out.println("visitDeclarationG e " + e);
+            valmap.put(name,e);
             s = n + "=" + e + ";\r\n";
             System.out.println("visitDeclarationG s " + s);
             return s;
         }
+        
         s = n + ";\r\n";
         return s;
     }
@@ -242,6 +283,8 @@ public class CodeGenVisitor implements ASTVisitor {
         String right = (String) binaryExpr.getRightExpr().visit(this, arg);
         Type r = binaryExpr.getRightExpr().getType();
         String op = binaryExpr.getOp().text();
+        
+        System.out.println("Left " + l + " Right " + r + " op " + o);
         if (l == Type.STRING && o == Kind.EQ) {
             s = left + ".equals(" + right + ")";
         }
@@ -250,10 +293,30 @@ public class CodeGenVisitor implements ASTVisitor {
         }
         else {
             s = "(" + left + op + right + ")";
-        }
+        }/*
+        if (l == Type.PIXEL && r == Type.PIXEL) {
+            if (o == Kind.PLUS) {
+                System.out.println("pixpix");
+                String lp = map.get(search(left)).pop();
+                String rp = map.get(search(right)).pop();
+                System.out.println("onto vals " + lp);
+                String lpv = valmap.get(lp);
+                String rpv = valmap.get(rp);
+                System.out.println("onto ints " + lpv.substring(2,10) +  " " + rpv.substring(2,10));
+                int lpint = Integer.parseInt(lpv.substring(2,10),16);
+                int rpint = Integer.parseInt(rpv.substring(2,10),16);
+                System.out.println("now adding");
+                ImageOps.binaryPackedPixelPixelOp(OP.PLUS, lpint, rpint);
+                String lprp = lp;
+                System.out.println("lprp " + lpv);
+                return lprp;
+            }
+        }*/
         System.out.println(s);
         return s;
     }
+
+    
 
     @Override
     public Object visitUnaryExpr(UnaryExpr unaryExpr, Object arg) throws PLCCompilerException {
@@ -308,7 +371,7 @@ public class CodeGenVisitor implements ASTVisitor {
     public Object visitReturnStatement(ReturnStatement returnStatement, Object arg) throws PLCCompilerException {
         System.out.println("visitReturnStatementG");
         String s;
-        returnStatement.getE().visit(this, arg);
+        
         s = "return " + returnStatement.getE().visit(this, arg) + ";";
         System.out.println(s);
         return s;
@@ -326,7 +389,7 @@ public class CodeGenVisitor implements ASTVisitor {
     public Object visitBooleanLitExpr(BooleanLitExpr booleanLitExpr, Object arg) throws PLCCompilerException {
         System.out.println("visitBooleanLitExprGen");
         String s;
-        s = (String) booleanLitExpr.getText();
+        s = (String) booleanLitExpr.getText().toLowerCase();
         return s;
     }
 
@@ -336,11 +399,12 @@ public class CodeGenVisitor implements ASTVisitor {
     public Object visitConstExpr(ConstExpr constExpr, Object arg) throws PLCCompilerException {
         System.out.println("visitConstExprGen");
         String n = constExpr.getName();
-        System.out.println("n" + n + ".");
+        System.out.println("color is " + n + ".");
         int c;
         if (n.equals("Z")) {
             return "255";
         }
+
         else {
             
             switch (n.toLowerCase()) {
@@ -381,9 +445,8 @@ public class CodeGenVisitor implements ASTVisitor {
                     throw new CodeGenException();
             }
             
-            
-            return "0x" +
-            Integer.toHexString(c);
+            System.out.println("return color is " + Integer.toHexString(c));
+            return "0x" + Integer.toHexString(c);
         }
     }
 
