@@ -46,14 +46,15 @@ import edu.ufl.cise.cop4020fa23.runtime.PixelOps;
 import edu.ufl.cise.cop4020fa23.runtime.ImageOps.OP;
 
 public class CodeGenVisitor implements ASTVisitor {
-    String imp;
+    String head;
 	//String StringBuilder;
-    HashMap<String, Set<String>> map;
+    HashMap<String, HashMap<String,Type>> map;
     HashMap<String, String> valmap;
     CodeGenVisitor() {
 		System.out.println("CodeGenVisitor");
         map = new HashMap<>();
         valmap = new HashMap<>();
+        head = "package edu.ufl.cise.cop4020fa23;\r\n";
 	}
 
     String type(String t) {
@@ -65,9 +66,15 @@ public class CodeGenVisitor implements ASTVisitor {
         }
         if (t.equals("image")) {
             t = "BufferedImage";
+            if (head.contains("import java.awt.image.BufferedImage;")== false) {
+                head += "import java.awt.image.BufferedImage;\r\n";
+            }
         }
         if (t.equals("pixel")) {
             t = "int";
+            if (head.contains("import edu.ufl.cise.cop4020fa23.runtime.PixelOps;")== false) {
+                head += "import edu.ufl.cise.cop4020fa23.runtime.PixelOps;\r\n";
+            }
         }
         if (t.equals("boolean")) {
             t = "Boolean";
@@ -86,24 +93,10 @@ public class CodeGenVisitor implements ASTVisitor {
         
         return sol;
     }
-    int colint(String s) {
-        System.out.println("colint");
-        s = s.substring(2,10);
-        int red = Integer.parseInt(s.substring(0, 2), 16);
-        int green = Integer.parseInt(s.substring(2, 4), 16);
-        int blue = Integer.parseInt(s.substring(4, 6), 16);
-        int alpha = Integer.parseInt(s.substring(6, 8), 16);
-        // Print the values (or use them as needed)
-        System.out.println("Red: " + red);
-        System.out.println("Green: " + green);
-        System.out.println("Blue: " + blue);
-        System.out.println("Alpha: " + alpha);
-        return 0;
-    }
 
     @Override
     public Object visitProgram(Program program, Object arg) throws PLCCompilerException {
-        System.out.println("A\nA\nA\nvisitProgramGen");
+        System.out.println("A1\nA2\nA3\nvisitProgramGen");
         String s;
         String p;
         String t = program.getType().name();
@@ -111,15 +104,22 @@ public class CodeGenVisitor implements ASTVisitor {
 
         String b = (String) program.getBlock().visit(this, arg);
 
+        String e = "";
+        List<BlockElem> elems = program.getBlock().getElems();
+        for (int i = 0; i < elems.size(); i++) {
+            e += elems.get(i).getClass().getName();
+            elems.get(i).visit(this, arg);
+        }
+        System.out.println("Program e's " + e);
         p = "";
         for (int i = 0; i < program.getParams().size(); i++) {
             String para;
             if (i > 0) {
                 p += ",";
             }
+            
             para = program.getType().toString().toLowerCase();
             para = type(para);
-            System.out.println("errrmmm " + program.getParams().get(i));
             para += " " + (String) program.getParams().get(i).visit(this, arg);
             p +=  para;
             
@@ -130,27 +130,8 @@ public class CodeGenVisitor implements ASTVisitor {
         body += "public class " + program.getName() + "{\r\npublic static " + 
         t + " apply(" + p + ")\r\n" + 
         b + "}";
-        String head;
-        System.out.println("Body\n" + body);
-        head = "package edu.ufl.cise.cop4020fa23;\r\n";
-        if (body.contains("write")) {
-            head += "import edu.ufl.cise.cop4020fa23.runtime.ConsoleIO;\r\n";
-        }
-        if (body.contains("BufferedImage")) {
-            head += "import java.awt.image.BufferedImage;\r\n";
-            if (head.contains("import edu.ufl.cise.cop4020fa23.runtime.ImageOps;") == false) {
-                head += "import edu.ufl.cise.cop4020fa23.runtime.ImageOps;";
-            }
-        }
-        if (body.contains("FileURLIO")) {
-            head += "import edu.ufl.cise.cop4020fa23.runtime.FileURLIO;\r\n";
-        }
-        if (body.contains("ImageOps")) {
-            head += "import edu.ufl.cise.cop4020fa23.runtime.ImageOps;\r\n";
-        }
-        if (body.contains("PixelOps")) {
-            head += "import edu.ufl.cise.cop4020fa23.runtime.PixelOps;\r\n";
-        }
+
+        
 
         s = head + body;
         System.out.println("Map " + map + "\n");
@@ -165,16 +146,16 @@ public class CodeGenVisitor implements ASTVisitor {
         List<BlockElem> elems = block.getElems();
         for (int i = 0; i < elems.size(); i++) {
             e = e + elems.get(i).visit(this,arg);
-            System.out.println("ayb " + e);
+            System.out.println("adding to block " + e);
         }
-        System.out.println("BLOCKBLOCK " + e + "\nA\n");
+        System.out.println("Block returning " + e + "\nA\n");
         s = "{" + e + "}";
         return s;
     }
 
     @Override
     public Object visitNameDef(NameDef nameDef, Object arg) throws PLCCompilerException {
-        System.out.println("visitNameDefGen" + nameDef);
+        System.out.println("visitNameDefGen " + nameDef);
         
         String t = nameDef.getType().name();
         t = type(t);
@@ -184,41 +165,42 @@ public class CodeGenVisitor implements ASTVisitor {
             nameDef.getDimension().visit(this, arg);
         }
         
-        System.out.println("t " + t);
-        System.out.println("s " + s);
         String n = null;
         if (map.get(s) == null) {
-            Set<String> narr;
+            HashMap<String,Type> narr;
             if (map.get(s) == null) {
                 n = s + "$0";
-                narr = new HashSet();
+                narr = new HashMap<>();
             }
             else {
-                n = s+"$"+map.get(s).size();
+                n = s+"$"+(map.get(s).size()-1);
                 narr = map.get(s);
             }
-            narr.add(n);
+            narr.put(n, nameDef.getType());
             map.put(s,narr);
             n = t + " " + n;
         }
         else {
-            Iterator<String> iterator = map.get(s).iterator();
-            while (iterator.hasNext()) {
-                String name = iterator.next();
-                System.out.println(name);
-                n = name;
+            HashMap<String,Type> setmap = map.get(s);
+            for (String key : setmap.keySet()) {
+                Type value = setmap.get(key);
+                System.out.println("Key: " + key + ", Value: " + value);
+                if (value == nameDef.getType()) {
+                    n = key;
+                    break;
+                }
             }
-            System.out.println("namedef " + n + " " + s);
         }
-
-        System.out.println("namdef returning " + n);
+        System.out.println("namedef " + n + " " + s);
+        
         return n;
+    
     }
 
     @Override
     public Object visitDeclaration(Declaration declaration, Object arg) throws PLCCompilerException {
         System.out.println("visitDeclarationG");
-        String s;
+        String s = "";
         String n = (String) declaration.getNameDef().visit(this, arg);
         String name;
         if (n.contains(" ")) {
@@ -229,40 +211,58 @@ public class CodeGenVisitor implements ASTVisitor {
             name = n;
         }
         System.out.println("visitDeclarationG n " + n);
-
-        
         //Old
         if (declaration.getInitializer() != null) {
             String e = (String) declaration.getInitializer().visit(this, arg);
             System.out.println("visitDeclarationG e " + e);
             valmap.put(name,e);
-            s = n + "=" + e + ";\r\n";
-            System.out.println("visitDeclarationG s " + s);
-            return s;
+            s = n + "=" + e;
+            
         }
-        if (declaration.getNameDef().getType() != Type.IMAGE) {
-            s = n + ";\r\n";
-            return s;
-        }
-        
-        else {
-            if (declaration.getInitializer().getType() == Type.STRING) {
-                if (declaration.getNameDef().getDimension() != null) {
-                    return FileURLIO.readImage((String)declaration.getInitializer().visit(this, arg),(int) declaration.getNameDef().getDimension().getWidth().visit(this, arg), (int) declaration.getNameDef().getDimension().getHeight().visit(this, arg));
+
+        if (declaration.getNameDef().getType() == Type.IMAGE) {
+            if (declaration.getInitializer() == null) {
+                if (declaration.getNameDef().getDimension() == null) {
+                    throw new CodeGenException();
                 }
-                return FileURLIO.readImage((String)declaration.getInitializer().visit(this, arg));
+                BufferedImage bi = ImageOps.makeImage((int) declaration.getNameDef().getDimension().getWidth().visit(this, arg), (int) declaration.getNameDef().getDimension().getHeight().visit(this,arg));
+                return "final BufferedImage" + n + "=" + "ImageOps.makeImage(" + declaration.getNameDef().getDimension().visit(this, arg) + ");";
+            }
+            if (declaration.getInitializer().getType() == Type.STRING) {
+                if (head.contains("import edu.ufl.cise.cop4020fa23.runtime.FileURLIO;")== false) {
+                    head += "import edu.ufl.cise.cop4020fa23.runtime.FileURLIO;\r\n";
+                }
+                if (declaration.getNameDef().getDimension() != null) {
+                    System.out.println("visitDeclarationG fileio h and w" );
+                    s = n + "=" +"FileURLIO.readImage(" + (String)declaration.getInitializer().visit(this, arg) + 
+                    (int) declaration.getNameDef().getDimension().getWidth().visit(this, arg) +  
+                    (int) declaration.getNameDef().getDimension().getHeight().visit(this, arg) + ");";
+                    
+                    return s;
+                }
+                System.out.println("visitDeclarationG fileio");
+                return n + "=" + "FileURLIO.readImage(" + declaration.getInitializer().visit(this, arg) + ");";
             }
             if (declaration.getInitializer().getType() == Type.IMAGE) {
+                if (head.contains("import edu.ufl.cise.cop4020fa23.runtime.ImageOps;") == false) {
+                    head += "import edu.ufl.cise.cop4020fa23.runtime.ImageOps;\r\n";
+                }
                 if (declaration.getNameDef().getDimension() == null) {
-                    return ImageOps.cloneImage((BufferedImage) declaration.getInitializer().visit(this, arg));
+                    System.out.println("visitDeclarationG clone");
+                    return "ImageOps.cloneImage(" + declaration.getInitializer().visit(this, arg) + ");";
                 }
                 else {
+                    System.out.println("visitDeclarationG resize");
                     declaration.getNameDef().getDimension().visit(this, arg);
-                    return ImageOps.copyAndResize((BufferedImage) declaration.getInitializer().visit(this, arg),(int) declaration.getNameDef().getDimension().getWidth().visit(this, arg),(int) declaration.getNameDef().getDimension().getHeight().visit(this, arg));
+                    return "ImageOps.copyAndResize(" + declaration.getInitializer().visit(this, arg) + "," +
+                     declaration.getNameDef().getDimension().getWidth().visit(this, arg)+","+
+                     declaration.getNameDef().getDimension().getHeight().visit(this, arg)+"); ;";
                 }
             }
-            throw new CodeGenException("visitdeclg");
         }
+
+        s = n + ";\r\n";
+        return s;
         
     }
 
@@ -286,37 +286,35 @@ public class CodeGenVisitor implements ASTVisitor {
 
     @Override
     public Object visitIdentExpr(IdentExpr identExpr, Object arg) throws PLCCompilerException {
-        System.out.println("visitIdentExprG");
+        System.out.println("visitIdentExprG " + identExpr);
         String s;
-        s = identExpr.getName();
-        
-        String n;
+        s = (String) identExpr.getNameDef().visit(this, arg);
+        System.out.println("identvsname " + identExpr.getName() + " " + s);
+        /*
         if (map.get(s) == null) {
-            Set<String> narr;
+            HashMap<String,Type> narr;
             if (map.get(s) == null) {
                 n = s + "$0";
-                narr = new HashSet();
+                narr = new HashMap<>();
             }
             else {
-                n = s+"$"+map.get(s).size();
+                n = s+"$"+(map.get(s).size()-1);
                 narr = map.get(s);
             }
-            narr.add(n);
+            narr.put(n,identExpr.getType());
             map.put(s,narr);
         }
         else {
+ 
             System.out.println("visitIdentExprG " + map.get(s));
-            n = null;
-            Iterator<String> iterator = map.get(s).iterator();
-            while (iterator.hasNext()) {
-                String name = iterator.next();
-                System.out.println(name);
-                n = name;
-            }
-        }
+            
+            HashMap<String,Type> setmap = map.get(s);
+            n = s + "$" + (setmap.size()-1);
+            setmap.put(n, identExpr.getType());
+            map.put(s,setmap);
+        }*/
         
-        System.out.println("Ident Returning " + n);
-        return n;
+        return s;
     }
 
     @Override
@@ -354,24 +352,38 @@ public class CodeGenVisitor implements ASTVisitor {
         }
         
         if (l == Type.PIXEL && r == Type.PIXEL) {
+            if (head.contains("import edu.ufl.cise.cop4020fa23.runtime.PixelOps;") == false) {
+                head += "import edu.ufl.cise.cop4020fa23.runtime.PixelOps;\r\n";
+            }
+            if (head.contains("import edu.ufl.cise.cop4020fa23.runtime.ImageOps;") == false) {
+                head += "import edu.ufl.cise.cop4020fa23.runtime.ImageOps;\r\n";
+            }
             if (left.contains("PixelOps.pack") == false && right.contains("PixelOps.pack") == false) {
                 if (o == Kind.PLUS) {
-                    System.out.println("pixpix ");
-                    System.out.println("onto ints " + left + " " + right + " " + binaryExpr);
+                    System.out.println("pixpix " + map);
+                    System.out.println("onto ints " + left.substring(0,left.length()-2) + " " + right + " " + binaryExpr);
                     if (left.contains("$")) {
                         System.out.println("$ ");
-                        Iterator<String> iterator = map.get(search(left)).iterator();
-                        while (iterator.hasNext()) {
-                            String name = iterator.next();
-                            System.out.println(name);
-                            left = name;
+                        HashMap<String,Type> setmap = map.get(left.substring(0,left.length()-2));
+                        for (String key : setmap.keySet()) {
+                            Type value = setmap.get(key);
+                            System.out.println("Key: " + key + ", Value: " + value);
+                            if (value == l) {
+                                left = key;
+                                break;
+                            }
                         }
-                        iterator = map.get(search(right)).iterator();
-                        while (iterator.hasNext()) {
-                            String name = iterator.next();
-                            System.out.println(name);
-                            right = name;
+                        setmap = map.get(right.substring(0,right.length()-2));
+                        for (String key : setmap.keySet()) {
+                            Type value = setmap.get(key);
+                            System.out.println("Key: " + key + ", Value: " + value);
+                            if (value == r) {
+                                right = key;
+                                break;
+                            }
                         }
+                        System.out.println(left + " " + right + ".");
+                        System.out.println(valmap + " " + valmap.get("p0$0"));
                         left = valmap.get(left);
                         right = valmap.get(right);
                     }
@@ -415,6 +427,12 @@ public class CodeGenVisitor implements ASTVisitor {
         else if (o == Kind.BANG) {
             op = "!";
         }
+        else if (o == Kind.RES_height) {
+            return "(" + e + ".getHeight())";
+        }
+        else if (o == Kind.RES_width) {
+            return "(" + e + ".getWidth())";
+        }
         else {
             throw new CodeGenException("visitUnaryExprG");
         }
@@ -427,16 +445,68 @@ public class CodeGenVisitor implements ASTVisitor {
         System.out.println("visitLValueGen");
         String s;
         s = (String) lValue.getNameDef().visit(this, arg);
+        if (lValue.getChannelSelector() != null) {
+            lValue.getChannelSelector().visit(this, arg);
+        }
+        if (lValue.getPixelSelector() != null) {
+            lValue.getPixelSelector().visit(this, arg);
+        }
         return s;
     }
 
     @Override
     public Object visitAssignmentStatement(AssignmentStatement assignmentStatement, Object arg) throws PLCCompilerException {
-        System.out.println("visitAssignmentStatementGen");
+        System.out.println("visitAssignmentStatementGen " + assignmentStatement);
         String s;
         String l = (String) assignmentStatement.getlValue().visit(this, arg);
         String e = (String) assignmentStatement.getE().visit(this, arg);
-        s = l + "=" + e + ";";
+        System.out.println("visitAssignmentStatementGen " + l + " " + e);
+        if (assignmentStatement.getlValue().getType() == Type.IMAGE) {
+            
+            if (assignmentStatement.getlValue().getPixelSelector() == null &&assignmentStatement.getlValue().getChannelSelector() == null) {
+                if (assignmentStatement.getE().getType() == Type.IMAGE) {
+                    s = "ImageOps.copyInto(" + l + "," + e + ");";
+                }
+                if (assignmentStatement.getE().getType() == Type.PIXEL) {
+                    s = "ImageOps.setAllPixels(" + l + "," + e + ");";
+                }
+                if (assignmentStatement.getE().getType() == Type.STRING) {
+                    s = "FileURLIO.readImage(" + e + "," +
+                    assignmentStatement.getlValue().getNameDef().getDimension().getWidth() + "," + 
+                    assignmentStatement.getlValue().getNameDef().getDimension().getHeight() + ");" +
+                    "ImageOps.copyInto(" + e + "," + l + ");";
+                }
+            }
+            else if (assignmentStatement.getlValue().getChannelSelector() != null) {
+                throw new CodeGenException();
+            }
+            else if (assignmentStatement.getlValue().getPixelSelector() != null && assignmentStatement.getlValue().getChannelSelector() == null) {
+                //TODO
+                throw new CodeGenException("incomplete");
+            }
+            throw new CodeGenException();
+        }
+        else if (assignmentStatement.getlValue().getType() == Type.PIXEL && assignmentStatement.getlValue().getChannelSelector() != null) {
+
+            Kind c = (Kind) assignmentStatement.getlValue().getChannelSelector().visit(this, arg);
+            if (c == Kind.RES_red) {
+                s = "PixelOps.setRed(" + l + "," + e;
+            }
+            if (c == Kind.RES_green) {
+                s = "PixelOps.setRed(" + l + "," + e;
+            }
+            if (c == Kind.RES_blue) {
+                s = "PixelOps.setRed(" + l + "," + e;
+            }
+            else {
+                throw new CodeGenException();
+            }
+        }
+        else {
+            
+            s = l + "=" + e + ";";
+        }
+        
         return s;
     }
 
@@ -446,6 +516,10 @@ public class CodeGenVisitor implements ASTVisitor {
         System.out.println("visitWriteStatementG");
         String s;
         s = "ConsoleIO.write(" + writeStatement.getExpr().visit(this, arg) + ");\r\n";
+        if (head.contains("import edu.ufl.cise.cop4020fa23.runtime.ConsoleIO;") == false) {
+            head += "import edu.ufl.cise.cop4020fa23.runtime.ConsoleIO;\r\n";
+        }
+        
         System.out.println(s);
         return s;
     }
@@ -456,7 +530,7 @@ public class CodeGenVisitor implements ASTVisitor {
         String s;
         
         s = "return " + returnStatement.getE().visit(this, arg) + ";";
-        System.out.println(s);
+        System.out.println("returning " + s);
         return s;
     }
 
@@ -567,10 +641,10 @@ public class CodeGenVisitor implements ASTVisitor {
                     s = "ImageOps.extractRed(" + p + ")";
                 }
                 if (c == Kind.RES_green) {
-                    s = "ImageOps.extractGreen(" + p + ")";
+                    s = "ImageOps.extractGrn(" + p + ")";
                 }
                 if (c == Kind.RES_blue) {
-                    s = "ImageOps.extractBlue(" + p + ")";
+                    s = "ImageOps.extractBlu(" + p + ")";
                 }
                 
                 
@@ -624,6 +698,7 @@ public class CodeGenVisitor implements ASTVisitor {
     public Object visitDoStatement(DoStatement doStatement, Object arg) throws PLCCompilerException {
     System.out.println("visitDoStatementGen");
         // TODO Auto-generated method stub
+        System.out.println(doStatement);
         throw new UnsupportedOperationException("Unimplemented method 'visitDoStatement'");
     }
 
@@ -631,6 +706,7 @@ public class CodeGenVisitor implements ASTVisitor {
     public Object visitIfStatement(IfStatement ifStatement, Object arg) throws PLCCompilerException {
     System.out.println("visitIfStatementGen");
         // TODO Auto-generated method stub
+        System.out.println(ifStatement);
         throw new UnsupportedOperationException("Unimplemented method 'visitIfStatement'");
     }
 
@@ -638,6 +714,7 @@ public class CodeGenVisitor implements ASTVisitor {
     public Object visitGuardedBlock(GuardedBlock guardedBlock, Object arg) throws PLCCompilerException {
     System.out.println("visitGuardedBlockGen");
         // TODO Auto-generated method stub
+        System.out.println(guardedBlock);
         throw new UnsupportedOperationException("Unimplemented method 'visitGuardedBlock'");
     }
 
